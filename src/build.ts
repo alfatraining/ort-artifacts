@@ -77,8 +77,8 @@ await new Command()
 
 		args.push('-Donnxruntime_MINIMAL_BUILD=ON');
 		args.push('-Donnxruntime_EXTENDED_MINIMAL_BUILD=ON');
-		add_default_definition(cmake_extra_defines, "ONNX_MINIMAL_BUILD", "ON");
-
+		args.push('-DONNX_MINIMAL_BUILD=ON');
+		
 		if (platform === 'darwin') {
 			args.push('-Dprotobuf_BUILD_PROTOC_BINARIES=OFF');
 			args.push(`-DCMAKE_OSX_DEPLOYMENT_TARGET=${options.iphoneos || options.iphonesimulator ? IPHONE_DEPLOYMENT_TARGET : MACOS_DEPLOYMENT_TARGET}`);
