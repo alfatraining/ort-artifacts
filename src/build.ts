@@ -85,6 +85,7 @@ await new Command()
 
 		// Flags across targets.
 		args.push('-Donnxruntime_CLIENT_PACKAGE_BUILD=ON');
+		args.push('-Donnxruntime_USE_TELEMETRY=OFF');
 		args.push(`-Donnxruntime_ENABLE_LTO=${platform === 'win32' && options.static ? "OFF" : "ON"}`);
 		args.push('-Donnxruntime_BUILD_UNIT_TESTS=OFF');
 		args.push('-Donnxruntime_USE_KLEIDIAI=ON');
