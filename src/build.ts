@@ -130,7 +130,6 @@ await new Command()
 		}
 
 		// Building for Android on Linux.
-		// TODO: Add nnapi execution provider.
 		if (platform === 'linux' && options.android) {
 			// ANDROID_NDK_HOME and ANDROID_SDK_ROOT are expected to be set in the environment.
 			const android_ndk_path = Deno.env.get("ANDROID_NDK_HOME");
