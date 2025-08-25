@@ -83,7 +83,6 @@ jobs:
         run: |
           sudo apt update && sudo apt install -y gcc make gcc-11-aarch64-linux-gnu g++-11-aarch64-linux-gnu binutils-aarch64-linux-gnu
       - uses: actions/checkout@v4
-      - uses: seanmiddleditch/gha-setup-ninja@v6
       - uses: actions/setup-java@v4
         with:
           java-version: "17"
