@@ -72,14 +72,14 @@ jobs:
             args: "--static --iphonesimulator -A aarch64 --xnnpack --coreml -N"
             runs-on: macos-13
           - target: dylib-aarch64-android
-            args: "--android -A aarch64 --xnnpack -N"
+            args: "--android -A aarch64 --xnnpack --nnapi -N"
             runs-on: ubuntu-24.04
-          - target: dylib-aarch64-android
-            args: "-static --android -A aarch64 --xnnpack -N"
+          - target: static-aarch64-android
+            args: "--static --android -A aarch64 --xnnpack --nnapi -N"
             runs-on: ubuntu-24.04
     steps:
       - name: Install cross-compile tools
-        if: matrix.target == 'dylib-aarch64-unknown-linux-gnu' || matrix.target == 'static-aarch64-unknown-linux-gnu'
+        if: matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux'
         run: |
           sudo apt update && sudo apt install -y gcc make gcc-11-aarch64-linux-gnu g++-11-aarch64-linux-gnu binutils-aarch64-linux-gnu
       - uses: actions/checkout@v4

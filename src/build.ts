@@ -22,21 +22,22 @@ await new Command()
 	.type('android-abi', TARGET_ANDROID_ABI_TYPE)
 	.option('-r, --reference <string>', 'Exact branch or tag')
 	.option('-s, --static', 'Build static library')
+	.option('-N, --ninja', 'Build with Ninja')
+	.option('-A, --arch <arch:target-arch>', 'Configure target architecture for cross-compile', { default: 'x86_64' })
+	.option('--iphoneos', 'Target iOS / iPadOS')
+	.option('--iphonesimulator', 'Target iOS / iPadOS simulator')
+	.option('--android', 'Target Android')
+	.option('--android_api <number>', 'Android API', { default: 29 })
+	.option('--android_abi <android_abi:android-abi>', 'Android ABI', { default: 'arm64-v8a' })
+	.option('-W, --wasm', 'Compile for WebAssembly (with patches)')
+	.option('--emsdk <version:string>', 'Emsdk version to use for WebAssembly build', { default: '4.0.3' })
 	.option('--mt', 'Link with static MSVC runtime')
 	.option('--directml', 'Enable DirectML EP')
 	.option('--coreml', 'Enable CoreML EP')
 	.option('--xnnpack', 'Enable XNNPACK EP')
 	.option('--webgpu', 'Enable WebGPU EP')
 	.option('--openvino', 'Enable OpenVINO EP')
-	.option('-N, --ninja', 'build with ninja')
-	.option('-A, --arch <arch:target-arch>', 'Configure target architecture for cross-compile', { default: 'x86_64' })
-	.option('--iphoneos', 'Target iOS / iPadOS')
-	.option('--iphonesimulator', 'Target iOS / iPadOS simulator')
-	.option('--android', 'Target Android')
-	.option('--android_api <number>', 'Android API', { default: 29 })
-	.option('--android_abi <android_abi:android-abi>', 'Android ABI', { default: "arm64-v8a" })
-	.option('-W, --wasm', 'Compile for WebAssembly (with patches)')
-	.option('--emsdk <version:string>', 'Emsdk version to use for WebAssembly build', { default: '4.0.3' })
+	.option('--nnapi', 'Enable NNAPI EP')
 	.action(async (options, ..._) => {
 		const root = Deno.cwd();
 
@@ -137,10 +138,14 @@ await new Command()
 			args.push(`-DANDROID_ABI=${options.android_abi}`);
 			args.push('-DANDROID_USE_LEGACY_TOOLCHAIN_FILE=false');
 			args.push(`-DCMAKE_TOOLCHAIN_FILE=${join(android_ndk_path, "build", "cmake", "android.toolchain.cmake")}`);
+
+			if(options.nnapi) {
+				args.push('-Donnxruntime_USE_NNAPI_BUILTIN=ON');
+			}
 		}
 
 		// Building for Windows on Windows.
-		if (platform === 'win32' && options.directml) {
+		if (platform === 'win32') {
 			// https://github.com/microsoft/onnxruntime/pull/21005
 			compilerFlags.push('_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR');
 
@@ -152,7 +157,9 @@ await new Command()
 			}
 
 			// DirectML execution provider.
-			args.push('-Donnxruntime_USE_DML=ON');
+			if(options.directml) {
+				args.push('-Donnxruntime_USE_DML=ON');
+			}
 		}
 
 		// XNNpack execution provider.
