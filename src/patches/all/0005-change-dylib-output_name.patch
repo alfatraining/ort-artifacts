@@ -1,14 +1,14 @@
 diff --git a/cmake/onnxruntime.cmake b/cmake/onnxruntime.cmake
-index 010696a610..aa541293b3 100644
+index 6c1d4485eb..26e9fa6f6d 100644
 --- a/cmake/onnxruntime.cmake
 +++ b/cmake/onnxruntime.cmake
-@@ -143,7 +143,8 @@ if(onnxruntime_BUILD_SHARED_LIB)
-   target_include_directories(onnxruntime PRIVATE ${ONNXRUNTIME_ROOT} PUBLIC "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/onnxruntime>")
+@@ -140,7 +140,8 @@ endif()
+ target_include_directories(onnxruntime PRIVATE ${ONNXRUNTIME_ROOT} PUBLIC "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/onnxruntime>")
  
  
--  target_compile_definitions(onnxruntime PRIVATE FILE_NAME=\"onnxruntime.dll\")
-+  target_compile_definitions(onnxruntime PRIVATE FILE_NAME=\"onnxruntime_sx.dll\")
-+  set_target_properties(onnxruntime PROPERTIES OUTPUT_NAME "onnxruntime_sx")
+-target_compile_definitions(onnxruntime PRIVATE FILE_NAME=\"onnxruntime.dll\")
++target_compile_definitions(onnxruntime PRIVATE FILE_NAME=\"onnxruntime_sx.dll\")
++set_target_properties(onnxruntime PROPERTIES OUTPUT_NAME "onnxruntime_sx")
  
-   if(UNIX)
-     if (APPLE)
+ if(UNIX)
+   if (APPLE)
