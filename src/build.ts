@@ -132,11 +132,10 @@ await new Command()
 		// Building for Android on Linux.
 		if (platform === 'linux' && options.android) {
 			// ANDROID_NDK_HOME and ANDROID_SDK_ROOT are expected to be set in the environment.
-			const android_ndk_path = Deno.env.get("ANDROID_NDK_HOME");
 			args.push(`-DANDROID_PLATFORM=android-${options.android_api}`);
 			args.push(`-DANDROID_ABI=${options.android_abi}`);
 			args.push('-DANDROID_USE_LEGACY_TOOLCHAIN_FILE=false');
-			args.push(`-DCMAKE_TOOLCHAIN_FILE=${join(android_ndk_path, "build", "cmake", "android.toolchain.cmake")}`);
+			args.push(`-DCMAKE_TOOLCHAIN_FILE=${join(Deno.env.get("ANDROID_NDK_HOME"), "build", "cmake", "android.toolchain.cmake")}`);
 
 			if(options.nnapi) {
 				args.push('-Donnxruntime_USE_NNAPI_BUILTIN=ON');
