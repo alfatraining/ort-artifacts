@@ -46,6 +46,7 @@ await new Command()
 		await $`git reset --hard HEAD`;
 		await $`git clean -fd`;
 
+		console.log("Applying patches...");
 		const patchDir = join(root, 'src', 'patches', 'all');
 		for await (const patchFile of Deno.readDir(patchDir)) {
 			if (!patchFile.isFile) {
@@ -55,6 +56,7 @@ await new Command()
 			await $`git apply ${join(patchDir, patchFile.name)} --ignore-whitespace --recount --verbose`;
 			console.log(`applied ${patchFile.name}`);
 		}
+		console.log("Patches applied!");
 
 		if (options.wasm) {
 			// there's no WAY im gonna try to wrestle with CMake on this one
