@@ -88,8 +88,12 @@ await new Command()
 		args.push(`-Donnxruntime_ENABLE_LTO=${platform === 'win32' && options.static ? "OFF" : "ON"}`);
 		args.push('-Donnxruntime_BUILD_UNIT_TESTS=OFF');
 		args.push('-Donnxruntime_USE_KLEIDIAI=ON');
+		args.push('-Donnxruntime_ENABLE_PYTHON=OFF');
+
+		// Minimal build.
 		args.push('-Donnxruntime_MINIMAL_BUILD=ON');
-        args.push('-Donnxruntime_EXTENDED_MINIMAL_BUILD=ON');
+		args.push('-Donnxruntime_EXTENDED_MINIMAL_BUILD=ON');
+		args.push('-Donnxruntime_USE_FULL_PROTOBUF=OFF');
 
 		// Building for macOS and iOS on macOS.
 		if (platform === 'darwin') {
