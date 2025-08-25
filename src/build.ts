@@ -107,7 +107,7 @@ await new Command()
 			args.push(`-DANDROID_ABI=${android_abi}`);
 			args.push(`-DANDROID_MIN_SDK=${android_api}`);
 			args.push('-DANDROID_USE_LEGACY_TOOLCHAIN_FILE=false');
-			args.push(`-DCMAKE_TOOLCHAIN_FILE=${os.path.join(android_ndk_path, "build", "cmake", "android.toolchain.cmake")}`);
+			args.push(`-DCMAKE_TOOLCHAIN_FILE=${join(android_ndk_path, "build", "cmake", "android.toolchain.cmake")}`);
 		}
 
 		if (platform === 'win32' && options.directml) {
