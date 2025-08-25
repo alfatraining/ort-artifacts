@@ -4,7 +4,6 @@ ToDo:
 - Debug builds.
 - KleidiAI?
 - Builds for Android.
-- Builds for iOS.
 - Custom CMake build of Emscripten.
 - Add NPU-based execution providers (QNN?, Intel OpenVINO?, [AMD?](https://onnxruntime.ai/docs/execution-providers/Vitis-AI-ExecutionProvider.html), ...).
 - Option to compile WebGPU ep with Vulkan backend under Windows?

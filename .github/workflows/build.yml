@@ -4,7 +4,7 @@ on:
     inputs:
       onnxruntime-ref:
         type: string
-        description: "ONNX Runtime repository reference, e.g., 'rel-1.22.1' or 'main'"
+        description: "ONNX Runtime repository reference, e.g., 'rel-1.22.2' or 'main'"
         default: main
 env:
   GCC_VERSION: '11'
@@ -20,90 +20,97 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - target: dylib-aarch64-unknown-linux-gnu
-            args: "-A aarch64 --xnnpack --webgpu -N"
+          # - target: dylib-aarch64-unknown-linux-gnu
+          #   args: "-A aarch64 --xnnpack --webgpu -N"
+          #   runs-on: ubuntu-24.04
+          #   arch: "arm64" # Defined again for OpenVINO setup.
+          #   release: "ubuntu20" # Defined for OpenVINO setup.
+          # - target: static-aarch64-unknown-linux-gnu
+          #   args: "--static -A aarch64 --xnnpack --webgpu -N"
+          #   runs-on: ubuntu-24.04
+          #   arch: "arm64"
+          #   release: "ubuntu20"
+          # - target: dylib-x86_64-unknown-linux-gnu
+          #   args: "--xnnpack --webgpu -N"
+          #   runs-on: ubuntu-24.04
+          #   arch: "x86_64"
+          # - target: static-x86_64-unknown-linux-gnu
+          #   args: "--static --xnnpack --webgpu -N"
+          #   runs-on: ubuntu-24.04
+          #   arch: "x86_64"
+          # - target: dylib-aarch64-macos-darwin
+          #   args: "-A aarch64 --xnnpack --webgpu -N" # CoreML requires macOS 13 or newer.
+          #   runs-on: macos-13
+          #   arch: "arm64"
+          # - target: static-aarch64-macos-darwin
+          #   args: "--static -A aarch64 --xnnpack --webgpu -N"
+          #   runs-on: macos-13
+          #   arch: "arm64"
+          # - target: dylib-x86_64-macos-darwin
+          #   args: "--xnnpack --webgpu -N"
+          #   runs-on: macos-13
+          #   arch: "x86_64"
+          # - target: static-x86_64-macos-darwin
+          #   args: "--static --xnnpack --webgpu -N"
+          #   runs-on: macos-13
+          #   arch: "x86_64"
+          # - target: dylib-x86_64-pc-windows-msvc-md
+          #   args: "--directml --xnnpack --webgpu"
+          #   runs-on: windows-2025
+          #   arch: "x86_64"
+          # - target: static-x86_64-pc-windows-msvc-md
+          #   args: "--static --directml --xnnpack --webgpu"
+          #   runs-on: windows-2025
+          #   arch: "x86_64"
+          # - target: dylib-x86_64-pc-windows-msvc-mt
+          #   args: "--mt --directml --xnnpack --webgpu"
+          #   runs-on: windows-2025
+          #   arch: "x86_64"
+          # - target: static-x86_64-pc-windows-msvc-mt
+          #   args: "--static --mt --directml --xnnpack --webgpu"
+          #   runs-on: windows-2025
+          #   arch: "x86_64"
+          # - target: wasm32-unknown-emscripten
+          #   args: "-W --webgpu"
+          #   runs-on: ubuntu-24.04
+          #   arch: "wasm32"
+          # - target: dylib-aarch64-ios-darwin
+          #   args: "-A aarch64 --iphoneos --xnnpack --coreml -N"
+          #   runs-on: macos-13
+          #   arch: "arm64"
+          # - target: static-aarch64-ios-darwin
+          #   args: "--static --iphoneos -A aarch64 --xnnpack --coreml -N"
+          #   runs-on: macos-13
+          #   arch: "arm64"
+          # - target: dylib-aarch64-ios-simulator-darwin
+          #   args: "-A aarch64 --iphonesimulator --xnnpack --coreml -N"
+          #   runs-on: macos-13
+          #   arch: "arm64"
+          # - target: static-aarch64-ios-simulator-darwin
+          #   args: "--static --iphonesimulator -A aarch64 --xnnpack --coreml -N"
+          #   runs-on: macos-13
+          #   arch: "arm64"
+          - target: dylib-aarch64-android
+            args: "--android -A aarch64 --xnnpack -N"
             runs-on: ubuntu-24.04
-            arch: "arm64" # Defined again for OpenVINO setup.
-            release: "ubuntu20" # Defined for OpenVINO setup.
-          - target: static-aarch64-unknown-linux-gnu
-            args: "--static -A aarch64 --xnnpack --webgpu -N"
-            runs-on: ubuntu-24.04
-            arch: "arm64"
-            release: "ubuntu20"
-          - target: dylib-x86_64-unknown-linux-gnu
-            args: "--xnnpack --webgpu -N"
-            runs-on: ubuntu-24.04
-            arch: "x86_64"
-          - target: static-x86_64-unknown-linux-gnu
-            args: "--static --xnnpack --webgpu -N"
-            runs-on: ubuntu-24.04
-            arch: "x86_64"
-          - target: dylib-aarch64-macos-darwin
-            args: "-A aarch64 --xnnpack --webgpu -N" # CoreML requires macOS 13 or newer.
-            runs-on: macos-13
-            arch: "arm64"
-          - target: static-aarch64-macos-darwin
-            args: "--static -A aarch64 --xnnpack --webgpu -N"
-            runs-on: macos-13
-            arch: "arm64"
-          - target: dylib-x86_64-macos-darwin
-            args: "--xnnpack --webgpu -N"
-            runs-on: macos-13
-            arch: "x86_64"
-          - target: static-x86_64-macos-darwin
-            args: "--static --xnnpack --webgpu -N"
-            runs-on: macos-13
-            arch: "x86_64"
-          - target: dylib-x86_64-pc-windows-msvc-md
-            args: "--directml --xnnpack --webgpu"
-            runs-on: windows-2025
-            arch: "x86_64"
-          - target: static-x86_64-pc-windows-msvc-md
-            args: "--static --directml --xnnpack --webgpu"
-            runs-on: windows-2025
-            arch: "x86_64"
-          - target: dylib-x86_64-pc-windows-msvc-mt
-            args: "--mt --directml --xnnpack --webgpu"
-            runs-on: windows-2025
-            arch: "x86_64"
-          - target: static-x86_64-pc-windows-msvc-mt
-            args: "--static --mt --directml --xnnpack --webgpu"
-            runs-on: windows-2025
-            arch: "x86_64"
-          - target: wasm32-unknown-emscripten
-            args: "-W --webgpu"
-            runs-on: ubuntu-24.04
-            arch: "wasm32"
-          - target: dylib-aarch64-ios-darwin
-            args: "-A aarch64 --iphoneos --xnnpack --coreml -N"
-            runs-on: macos-13
-            arch: "arm64"
-          - target: static-aarch64-ios-darwin
-            args: "--static --iphoneos -A aarch64 --xnnpack --coreml -N"
-            runs-on: macos-13
-            arch: "arm64"
-          - target: dylib-aarch64-ios-simulator-darwin
-            args: "-A aarch64 --iphonesimulator --xnnpack --coreml -N"
-            runs-on: macos-13
-            arch: "arm64"
-          - target: static-aarch64-ios-simulator-darwin
-            args: "--static --iphonesimulator -A aarch64 --xnnpack --coreml -N"
-            runs-on: macos-13
             arch: "arm64"
     steps:
       - name: Install cross-compile tools
         if: matrix.target == 'dylib-aarch64-unknown-linux-gnu' || matrix.target == 'static-aarch64-unknown-linux-gnu'
         run: |
           sudo apt update && sudo apt install -y gcc make gcc-11-aarch64-linux-gnu g++-11-aarch64-linux-gnu binutils-aarch64-linux-gnu
-      - name: Remove unnecessary software
-        if: runner.os == 'Linux'
-        run: |
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /opt/hostedtoolcache/CodeQL
-          sudo docker image prune --all --force
       - uses: actions/checkout@v4
       - uses: seanmiddleditch/gha-setup-ninja@v6
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+      - uses: android-actions/setup-android@v3
+      - uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          add-to-path: false
+          ndk-version: 28.0.13004108
       # Following does not yet work on Ubuntu 24.04!
       # - uses: abrown/install-openvino-action@v9
       #   if: matrix.arch == 'x86_64' || matrix.arch == 'arm64'
@@ -115,6 +122,8 @@ jobs:
         with:
           deno-version: v2.x
       - name: Run builder
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run:
           deno run -A src/build.ts -r ${{ inputs.onnxruntime-ref }} ${{ matrix.args }}
       # See: https://github.com/microsoft/onnxruntime/issues/24911

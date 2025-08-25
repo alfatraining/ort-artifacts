@@ -30,6 +30,7 @@ await new Command()
 	.option('-A, --arch <arch:target-arch>', 'Configure target architecture for cross-compile', { default: 'x86_64' })
 	.option('--iphoneos', 'Target iOS / iPadOS')
 	.option('--iphonesimulator', 'Target iOS / iPadOS simulator')
+	.option('--android', 'Target Android')
 	.option('-W, --wasm', 'Compile for WebAssembly (with patches)')
 	.option('--emsdk <version:string>', 'Emsdk version to use for WebAssembly build', { default: '4.0.3' })
 	.action(async (options, ..._) => {
@@ -92,6 +93,19 @@ await new Command()
 			}
 		}
 
+		// TODO: Add nnapi execution provider.
+		if (platform === 'linux' && options.android) {
+			const android_abi = "arm64-v8a"; // TODO: Argument?
+			const android_api = 29; // TODO: Argument?
+			const android_ndk_path = Deno.env.get("ANDROID_NDK_HOME");
+			args.push('-Donnxruntime_ENABLE_LTO=ON');
+			args.push(`-DANDROID_PLATFORM=android-${str(android_api)}`);
+			args.push(`-DANDROID_ABI=${str(android_abi)}`);
+			args.push(`-DANDROID_MIN_SDK=${str(android_api)}`);
+			args.push('-DANDROID_USE_LEGACY_TOOLCHAIN_FILE=false');
+			args.push(`-DCMAKE_TOOLCHAIN_FILE=${os.path.join(android_ndk_path, "build", "cmake", "android.toolchain.cmake")}`);
+		}
+
 		if (platform === 'win32' && options.directml) {
 			args.push('-Donnxruntime_USE_DML=ON');
 		}
@@ -117,26 +131,26 @@ await new Command()
 			// args.push('-Donnxruntime_USE_OPENVINO_INTERFACE=ON'); <- Not sure what this does.
 		}
 
-		if (platform === 'darwin') {
-			if (options.arch === 'aarch64') {
-				args.push('-DCMAKE_OSX_ARCHITECTURES=arm64');
-			} else {
-				args.push('-DCMAKE_OSX_ARCHITECTURES=x86_64');
-			}
-		} else {
-			if (options.arch === 'aarch64' && arch !== 'arm64') {
-				args.push('-Donnxruntime_CROSS_COMPILING=ON');
-				switch (platform) {
-					case 'win32':
-						args.push('-A', 'ARM64');
-						compilerFlags.push('_SILENCE_ALL_CXX23_DEPRECATION_WARNINGS');
-						break;
-					case 'linux':
-						args.push(`-DCMAKE_TOOLCHAIN_FILE=${join(root, 'toolchains', 'aarch64-unknown-linux-gnu.cmake')}`);
-						break;
-				}
-			}
-		}
+		// if (platform === 'darwin') {
+		// 	if (options.arch === 'aarch64') {
+		// 		args.push('-DCMAKE_OSX_ARCHITECTURES=arm64');
+		// 	} else {
+		// 		args.push('-DCMAKE_OSX_ARCHITECTURES=x86_64');
+		// 	}
+		// } else {
+		// 	if (options.arch === 'aarch64' && arch !== 'arm64') {
+		// 		args.push('-Donnxruntime_CROSS_COMPILING=ON');
+		// 		switch (platform) {
+		// 			case 'win32':
+		// 				args.push('-A', 'ARM64');
+		// 				compilerFlags.push('_SILENCE_ALL_CXX23_DEPRECATION_WARNINGS');
+		// 				break;
+		// 			case 'linux':
+		// 				args.push(`-DCMAKE_TOOLCHAIN_FILE=${join(root, 'toolchains', 'aarch64-unknown-linux-gnu.cmake')}`);
+		// 				break;
+		// 		}
+		// 	}
+		// }
 
 		if (platform === 'win32') {
 			args.push(`-DONNX_USE_MSVC_STATIC_RUNTIME=${options.mt ? 'ON' : 'OFF'}`);
