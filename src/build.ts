@@ -97,14 +97,15 @@ await new Command()
 		}
 
 		// TODO: Add nnapi execution provider.
+		// ANDROID_NDK_HOME and ANDROID_SDK_ROOT are expected to be set.
 		if (platform === 'linux' && options.android) {
 			const android_abi = "arm64-v8a"; // TODO: Argument?
 			const android_api = 29; // TODO: Argument?
 			const android_ndk_path = Deno.env.get("ANDROID_NDK_HOME");
 			args.push('-Donnxruntime_ENABLE_LTO=ON');
-			args.push(`-DANDROID_PLATFORM=android-${str(android_api)}`);
-			args.push(`-DANDROID_ABI=${str(android_abi)}`);
-			args.push(`-DANDROID_MIN_SDK=${str(android_api)}`);
+			args.push(`-DANDROID_PLATFORM=android-${android_api}`);
+			args.push(`-DANDROID_ABI=${android_abi}`);
+			args.push(`-DANDROID_MIN_SDK=${android_api}`);
 			args.push('-DANDROID_USE_LEGACY_TOOLCHAIN_FILE=false');
 			args.push(`-DCMAKE_TOOLCHAIN_FILE=${os.path.join(android_ndk_path, "build", "cmake", "android.toolchain.cmake")}`);
 		}
