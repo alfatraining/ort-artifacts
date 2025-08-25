@@ -110,7 +110,7 @@ jobs:
         id: setup-ndk
         with:
           add-to-path: false
-          ndk-version: 28.0.13004108
+          ndk-version: r28
       # Following does not yet work on Ubuntu 24.04!
       # - uses: abrown/install-openvino-action@v9
       #   if: matrix.arch == 'x86_64' || matrix.arch == 'arm64'
