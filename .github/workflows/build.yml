@@ -84,12 +84,15 @@ jobs:
           sudo apt update && sudo apt install -y gcc make gcc-11-aarch64-linux-gnu g++-11-aarch64-linux-gnu binutils-aarch64-linux-gnu
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
+        if: matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android'
         with:
           java-version: "17"
           distribution: "temurin"
       - uses: android-actions/setup-android@v3
+        if: matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android'
       - uses: nttld/setup-ndk@v1
         id: setup-ndk
+        if: matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android'
         with:
           add-to-path: false
           ndk-version: r28
