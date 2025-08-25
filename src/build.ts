@@ -52,11 +52,11 @@ await new Command()
 			if (!patchFile.isFile) {
 				continue;
 			}
-
+			console.log(`Applying ${patchFile.name}...`);
 			await $`git apply ${join(patchDir, patchFile.name)} --ignore-whitespace --recount --verbose`;
-			console.log(`applied ${patchFile.name}`);
+			console.log(`Applied ${patchFile.name}!`);
 		}
-		console.log("Patches applied!");
+		console.log("All patches applied!");
 
 		if (options.wasm) {
 			// there's no WAY im gonna try to wrestle with CMake on this one
