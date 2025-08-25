@@ -76,9 +76,10 @@ await new Command()
 		const compilerFlags = [];
 		const args = [];
 
-		args.push('-Donnxruntime_MINIMAL_BUILD=ON');
-		args.push('-Donnxruntime_EXTENDED_MINIMAL_BUILD=ON');
-		args.push('-DONNX_MINIMAL_BUILD=ON');
+		args.push('-Donnxruntime_CLIENT_PACKAGE_BUILD=ON');
+		// args.push('-Donnxruntime_MINIMAL_BUILD=ON');
+		// args.push('-Donnxruntime_EXTENDED_MINIMAL_BUILD=ON');
+		// args.push('-DONNX_MINIMAL_BUILD=ON');
 		
 		if (platform === 'darwin') {
 			args.push('-Dprotobuf_BUILD_PROTOC_BINARIES=OFF');
