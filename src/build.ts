@@ -51,7 +51,7 @@ await new Command()
 		await $`git reset --hard HEAD`;
 		await $`git clean -fd`;
 
-		console.log("Applying patches...");
+		console.log('Applying patches...');
 		const patchDir = join(root, 'src', 'patches', 'all');
 		for await (const patchFile of Deno.readDir(patchDir)) {
 			if (!patchFile.isFile) {
@@ -61,11 +61,11 @@ await new Command()
 			await $`git apply ${join(patchDir, patchFile.name)} --ignore-whitespace --recount --verbose`;
 			console.log(`Applied ${patchFile.name}!`);
 		}
-		console.log("All patches applied!");
+		console.log('All patches applied!');
 
 		if (options.wasm) {
 			// there's no WAY im gonna try to wrestle with CMake on this one
-			await $`bash ./build.sh --config Release --build_wasm_static_lib --enable_wasm_simd --enable_wasm_threads --skip_tests --disable_wasm_exception_catching --disable_rtti --parallel ${options.webgpu ? "--use_webgpu" : ''} --emsdk_version ${options.emsdk}`;
+			await $`bash ./build.sh --config Release --build_wasm_static_lib --enable_wasm_simd --enable_wasm_threads --skip_tests --disable_wasm_exception_catching --disable_rtti --parallel ${options.webgpu ? '--use_webgpu' : ''} --emsdk_version ${options.emsdk}`;
 
 			const buildRoot = join(onnxruntimeRoot, 'build', 'Linux', 'Release');
 
@@ -86,7 +86,6 @@ await new Command()
 		// Flags across targets.
 		args.push('-Donnxruntime_CLIENT_PACKAGE_BUILD=ON');
 		args.push('-Donnxruntime_USE_TELEMETRY=OFF');
-		args.push(`-Donnxruntime_ENABLE_LTO=${platform === 'win32' && options.static ? "OFF" : "ON"}`);
 		args.push('-Donnxruntime_BUILD_UNIT_TESTS=OFF');
 		args.push('-Donnxruntime_USE_KLEIDIAI=ON');
 		args.push('-Donnxruntime_ENABLE_PYTHON=OFF');
@@ -139,7 +138,7 @@ await new Command()
 			args.push(`-DANDROID_PLATFORM=android-${options.android_api}`);
 			args.push(`-DANDROID_ABI=${options.android_abi}`);
 			args.push('-DANDROID_USE_LEGACY_TOOLCHAIN_FILE=false');
-			args.push(`-DCMAKE_TOOLCHAIN_FILE=${join(Deno.env.get("ANDROID_NDK_HOME"), "build", "cmake", "android.toolchain.cmake")}`);
+			args.push(`-DCMAKE_TOOLCHAIN_FILE=${join(Deno.env.get('ANDROID_NDK_HOME'), 'build', 'cmake', 'android.toolchain.cmake')}`);
 
 			if(options.nnapi) {
 				args.push('-Donnxruntime_USE_NNAPI_BUILTIN=ON');
@@ -198,6 +197,7 @@ await new Command()
 
 		if (!options.static) {
 			args.push('-Donnxruntime_BUILD_SHARED_LIB=ON');
+			args.push('-Donnxruntime_ENABLE_LTO=ON');
 		}
 
 		if (compilerFlags.length > 0) {
