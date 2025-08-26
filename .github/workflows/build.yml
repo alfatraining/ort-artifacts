@@ -21,40 +21,40 @@ jobs:
       matrix:
         include:
           - target: dylib-aarch64-linux
-            args: "-A aarch64 --xnnpack --webgpu -N"
+            args: "-A aarch64 --xnnpack -N"
             runs-on: ubuntu-24.04
           - target: static-aarch64-linux
-            args: "--static -A aarch64 --xnnpack --webgpu -N"
+            args: "--static -A aarch64 --xnnpack -N"
             runs-on: ubuntu-24.04
           - target: dylib-x86_64-linux
-            args: "--xnnpack --webgpu -N"
+            args: "--xnnpack -N"
             runs-on: ubuntu-24.04
           - target: static-x86_64-linux
-            args: "--static --xnnpack --webgpu -N"
+            args: "--static --xnnpack -N"
             runs-on: ubuntu-24.04
           - target: dylib-aarch64-macos
-            args: "-A aarch64 --xnnpack --webgpu -N" # CoreML requires macOS 13 or newer.
+            args: "-A aarch64 --xnnpack -N" # CoreML requires macOS 13 or newer.
             runs-on: macos-13
           - target: static-aarch64-macos
-            args: "--static -A aarch64 --xnnpack --webgpu -N"
+            args: "--static -A aarch64 --xnnpack -N"
             runs-on: macos-13
           - target: dylib-x86_64-macos
-            args: "--xnnpack --webgpu -N"
+            args: "--xnnpack -N"
             runs-on: macos-13
           - target: static-x86_64-macos
-            args: "--static --xnnpack --webgpu -N"
+            args: "--static --xnnpack -N"
             runs-on: macos-13
           - target: dylib-x86_64-windows-msvc-md
-            args: "--directml --xnnpack --webgpu"
+            args: "--directml --xnnpack"
             runs-on: windows-2025
           - target: static-x86_64-windows-msvc-md
-            args: "--static --directml --xnnpack --webgpu"
+            args: "--static --directml --xnnpack"
             runs-on: windows-2025
           - target: dylib-x86_64-windows-msvc-mt
-            args: "--mt --directml --xnnpack --webgpu"
+            args: "--mt --directml --xnnpack"
             runs-on: windows-2025
           - target: static-x86_64-windows-msvc-mt
-            args: "--static --mt --directml --xnnpack --webgpu"
+            args: "--static --mt --directml --xnnpack"
             runs-on: windows-2025
           - target: wasm32-emscripten
             args: "-W --webgpu"
