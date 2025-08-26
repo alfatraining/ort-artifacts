@@ -113,7 +113,7 @@ jobs:
           deno run -A src/build.ts -r ${{ inputs.onnxruntime-ref }} ${{ matrix.args }}
       # See: https://github.com/microsoft/onnxruntime/issues/24911
       - name: Remove executable stack flag
-        if: matrix.target == 'dylib-x86_64-unknown-linux-gnu' || matrix.target == 'dylib-aarch64-unknown-linux-gnu'
+        if: matrix.target == 'dylib-x86_64-linux' || matrix.target == 'dylib-aarch64-linux' || matrix.target == 'dylib-aarch64-android'
         run: |
           sudo apt-get update
           sudo apt-get install -y patchelf
