@@ -1,6 +1,7 @@
 Static builds of [onnxruntime](https://github.com/microsoft/onnxruntime) for various platforms.
 
 ToDo:
+- Minimal builds. Blocked by: https://github.com/microsoft/onnxruntime/issues/25796
 - Port all logics to CMake.
 - Debug builds.
 - Custom CMake build of Emscripten.
