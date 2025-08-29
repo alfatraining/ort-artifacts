@@ -31,6 +31,9 @@ option(USE_WEBGPU "Enable WebGPU EP" OFF)
 option(USE_OPENVINO "Enable OpenVINO EP" OFF)
 option(USE_NNAPI "Enable NNAPI EP" OFF)
 
+# Build optimization options
+option(FORCE_UPDATE "Force update of ONNX Runtime repository (re-clone)" OFF)
+
 # Constants from build.ts
 set(MACOS_DEPLOYMENT_TARGET "12.0")
 set(IPHONE_DEPLOYMENT_TARGET "16.0")
@@ -156,9 +159,15 @@ list(SORT PATCH_FILES)
 # Build patch command
 set(PATCH_COMMANDS git reset --hard HEAD)
 list(APPEND PATCH_COMMANDS COMMAND git clean -fd)
-foreach(PATCH_FILE ${PATCH_FILES})
-    list(APPEND PATCH_COMMANDS COMMAND git apply ${PATCH_FILE} --ignore-whitespace --recount --verbose)
-endforeach()
+#foreach(PATCH_FILE ${PATCH_FILES})
+    #list(APPEND PATCH_COMMANDS COMMAND git apply ${PATCH_FILE} --ignore-whitespace --recount --verbose)
+#endforeach()
+
+# For static builds, copy the external static-build CMakeLists.txt into the source tree
+if(STATIC_BUILD)
+    list(APPEND PATCH_COMMANDS COMMAND ${CMAKE_COMMAND} -E make_directory <SOURCE_DIR>/static-build)
+    list(APPEND PATCH_COMMANDS COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/src/static-build/CMakeLists.txt <SOURCE_DIR>/static-build/CMakeLists.txt)
+endif()
 
 # Build CMAKE_ARGS based on options - basic flags across all targets
 set(CMAKE_ARGS
@@ -174,8 +183,11 @@ set(CMAKE_ARGS
 
 # Determine source directory based on static build option
 if(STATIC_BUILD)
-    set(SOURCE_SUBDIR "${CMAKE_CURRENT_LIST_DIR}/src/static-build")
+    set(SOURCE_SUBDIR static-build)
     list(APPEND CMAKE_ARGS -DONNXRUNTIME_SOURCE_DIR=<SOURCE_DIR>)
+    list(APPEND CMAKE_ARGS -Donnxruntime_BUILD_SHARED_LIB=OFF)
+    list(APPEND CMAKE_ARGS -DBUILD_SHARED_LIB=OFF)
+    set(BUILD_SHARED_LIBS OFF)
 else()
     set(SOURCE_SUBDIR cmake)
     list(APPEND CMAKE_ARGS -Donnxruntime_BUILD_SHARED_LIB=ON)
@@ -311,6 +323,7 @@ ExternalProject_Add(onnxruntime
     GIT_SHALLOW ON
     GIT_SUBMODULES_RECURSE ON
     GIT_PROGRESS ON
+    UPDATE_DISCONNECTED $<NOT:${FORCE_UPDATE}>
     PATCH_COMMAND ${PATCH_COMMANDS}
     SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/onnxruntime
     SOURCE_SUBDIR ${SOURCE_SUBDIR}
@@ -318,4 +331,5 @@ ExternalProject_Add(onnxruntime
     CMAKE_ARGS ${CMAKE_ARGS}
     BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release --parallel
     INSTALL_COMMAND ${CMAKE_COMMAND} --install <BINARY_DIR>
+    STEP_TARGETS update
 )
