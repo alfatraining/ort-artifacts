@@ -6,6 +6,61 @@ $Arguments = $args
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = "Stop"
 
+# Function to setup Visual Studio Developer Command Prompt environment
+function Initialize-VSEnvironment {
+    Write-Host "Setting up Visual Studio Developer Command Prompt environment..." -ForegroundColor Green
+    
+    try {
+        # Use vswhere to find Visual Studio installation
+        $vsWhere = "vswhere.exe"
+        $vsInstallPath = & $vsWhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+        
+        if (-not $vsInstallPath) {
+            throw "Visual Studio installation not found"
+        }
+        
+        Write-Host "Found Visual Studio at: $vsInstallPath" -ForegroundColor Cyan
+        
+        # Path to vcvarsall.bat
+        $vcvarsPath = Join-Path $vsInstallPath "VC\Auxiliary\Build\vcvarsall.bat"
+        
+        if (-not (Test-Path $vcvarsPath)) {
+            throw "vcvarsall.bat not found at: $vcvarsPath"
+        }
+        
+        # Determine architecture argument for vcvarsall.bat
+        $vcvarsArch = switch ($TARGET_ARCH) {
+            "x86_64" { "x64" }
+            "aarch64" { "arm64" }
+            default { "x64" }
+        }
+        
+        Write-Host "Setting up VS environment for architecture: $vcvarsArch" -ForegroundColor Cyan
+        
+        # Get environment variables from vcvarsall.bat
+        $envVars = cmd /c "`"$vcvarsPath`" $vcvarsArch && set" | Where-Object { $_ -match "^([^=]+)=(.*)$" }
+        
+        # Apply environment variables to current session
+        foreach ($envVar in $envVars) {
+            if ($envVar -match "^([^=]+)=(.*)$") {
+                $name = $matches[1]
+                $value = $matches[2]
+                
+                # Only set important build-related variables
+                if ($name -match "^(PATH|INCLUDE|LIB|LIBPATH|VCINSTALLDIR|VCTOOLSINSTALLDIR|WINDOWSSDKDIR|WINDOWSSDKVERSION)$") {
+                    [Environment]::SetEnvironmentVariable($name, $value, "Process")
+                }
+            }
+        }
+        
+        Write-Host "Visual Studio environment initialized successfully" -ForegroundColor Green
+    }
+    catch {
+        Write-Error "Failed to initialize Visual Studio environment: $_"
+        exit 1
+    }
+}
+
 # Default values matching build.ts
 $REFERENCE = "main"
 $STATIC_BUILD = "OFF"
@@ -26,6 +81,9 @@ $USE_WEBGPU = "OFF"
 $USE_OPENVINO = "OFF"
 $USE_NNAPI = "OFF"
 $DRY_RUN = "OFF"
+$FORCE_UPDATE = "OFF"
+$CLEAN = "OFF"
+$CLEAN_ALL = "OFF"
 
 # Parse arguments
 $i = 0
@@ -107,6 +165,18 @@ while ($i -lt $Arguments.Length) {
             $DRY_RUN = "ON"
             $i++
         }
+        "--force-update" {
+            $FORCE_UPDATE = "ON"
+            $i++
+        }
+        "--clean" {
+            $CLEAN = "ON"
+            $i++
+        }
+        "--clean-all" {
+            $CLEAN_ALL = "ON"
+            $i++
+        }
         { $_ -in @("-h", "--help") } {
             Write-Host "Usage: .\build.ps1 [options]"
             Write-Host ""
@@ -130,6 +200,9 @@ while ($i -lt $Arguments.Length) {
             Write-Host "      --openvino               Enable OpenVINO EP"
             Write-Host "      --nnapi                  Enable NNAPI EP"
             Write-Host "      --dry-run                Print CMake command without executing"
+            Write-Host "      --force-update           Force update of ONNX Runtime repository (re-clone)"
+            Write-Host "      --clean                  Clean build artifacts but preserve ONNX Runtime repository"
+            Write-Host "      --clean-all              Clean everything including ONNX Runtime repository"
             Write-Host "  -h, --help                   Show this help message"
             exit 0
         }
@@ -171,10 +244,75 @@ $CMakeArgs = @(
     "-DUSE_WEBGPU=$USE_WEBGPU"
     "-DUSE_OPENVINO=$USE_OPENVINO"
     "-DUSE_NNAPI=$USE_NNAPI"
+    "-DFORCE_UPDATE=$FORCE_UPDATE"
 )
 
 # Add generator arguments if specified
 $CMakeArgs += $GeneratorArgs
+
+# Handle cleaning operations
+if ($CLEAN -eq "ON" -or $CLEAN_ALL -eq "ON") {
+    $BuildDir = "build"
+    
+    if ($CLEAN_ALL -eq "ON") {
+        Write-Host "Performing complete clean (including ONNX Runtime repository)..." -ForegroundColor Yellow
+        if (Test-Path $BuildDir) {
+            Remove-Item -Recurse -Force $BuildDir
+            Write-Host "Build directory completely removed." -ForegroundColor Green
+        } else {
+            Write-Host "Build directory does not exist - nothing to clean." -ForegroundColor Yellow
+        }
+    } elseif ($CLEAN -eq "ON") {
+        Write-Host "Performing selective clean (preserving ONNX Runtime repository)..." -ForegroundColor Yellow
+        
+        if (Test-Path $BuildDir) {
+            $OnnxRuntimeDir = Join-Path $BuildDir "onnxruntime"
+            $StampDir = Join-Path $BuildDir "onnxruntime-prefix\src\onnxruntime-stamp"
+            $TempDir = $null
+            $TempStampDir = $null
+            
+            # If ONNX Runtime repository exists, preserve it
+            if (Test-Path $OnnxRuntimeDir) {
+                $TempDir = Join-Path $env:TEMP "onnxruntime-preserve-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+                Write-Host "Temporarily preserving ONNX Runtime repository..." -ForegroundColor Cyan
+                Move-Item -Path $OnnxRuntimeDir -Destination $TempDir
+            }
+            
+            # If stamp directory exists, preserve it to prevent re-cloning
+            if (Test-Path $StampDir) {
+                $TempStampDir = Join-Path $env:TEMP "onnxruntime-stamps-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+                Write-Host "Temporarily preserving ExternalProject stamp files..." -ForegroundColor Cyan
+                Move-Item -Path $StampDir -Destination $TempStampDir
+            }
+            
+            # Remove build directory
+            Remove-Item -Recurse -Force $BuildDir
+            Write-Host "Build artifacts removed." -ForegroundColor Green
+            
+            # Restore ONNX Runtime repository if it was preserved
+            if ($TempDir -and (Test-Path $TempDir)) {
+                New-Item -ItemType Directory -Path $BuildDir -Force | Out-Null
+                Move-Item -Path $TempDir -Destination $OnnxRuntimeDir
+                Write-Host "ONNX Runtime repository restored." -ForegroundColor Green
+            }
+            
+            # Restore stamp files if they were preserved
+            if ($TempStampDir -and (Test-Path $TempStampDir)) {
+                $StampParentDir = Join-Path $BuildDir "onnxruntime-prefix\src"
+                New-Item -ItemType Directory -Path $StampParentDir -Force | Out-Null
+                Move-Item -Path $TempStampDir -Destination $StampDir
+                Write-Host "ExternalProject stamp files restored." -ForegroundColor Green
+            }
+        } else {
+            Write-Host "Build directory does not exist - nothing to clean." -ForegroundColor Yellow
+        }
+    }
+
+    Write-Host "Finished cleaning up."
+    exit 0
+    
+    Write-Host "Clean operation completed. Proceeding with build..." -ForegroundColor Green
+}
 
 if ($DRY_RUN -eq "ON") {
     Write-Host "DRY RUN MODE - Commands that would be executed:" -ForegroundColor Yellow
@@ -186,6 +324,9 @@ if ($DRY_RUN -eq "ON") {
 }
 
 try {
+    # Initialize Visual Studio environment
+    Initialize-VSEnvironment
+    
     # Execute CMake configuration
     Write-Host "Running: cmake $($CMakeArgs -join ' ')" -ForegroundColor Cyan
     & cmake @CMakeArgs
