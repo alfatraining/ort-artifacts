@@ -5,12 +5,12 @@ on:
       onnxruntime-ref:
         type: string
         description: "ONNX Runtime repository reference, e.g., 'rel-1.22.2' or 'main'"
-        default: main
+        default: "v1.22.2"
       target:
         type: choice
         description: "Specific target to build (leave empty to build all)"
         required: false
-        default: "all"
+        default: "static-x86_64-windows-msvc-mt"
         options:
           - "all"
           - dylib-aarch64-linux
@@ -138,9 +138,9 @@ jobs:
         shell: bash
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            powershell -File build.ps1 -OnnxRuntimeRef "${{ inputs.onnxruntime-ref }}" -Args "${{ matrix.args }}"
+            powershell -File build.ps1 -r "${{ inputs.onnxruntime-ref }}" -Args "${{ matrix.args }}"
           else
-            ./build.sh "${{ inputs.onnxruntime-ref }}" ${{ matrix.args }}
+            ./build.sh -r "${{ inputs.onnxruntime-ref }}" ${{ matrix.args }}
           fi
       # See: https://github.com/microsoft/onnxruntime/issues/24911
       - name: Remove executable stack flag
