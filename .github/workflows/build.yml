@@ -138,7 +138,7 @@ jobs:
         shell: bash
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            powershell -File build.ps1 -r "${{ inputs.onnxruntime-ref }}" "${{ matrix.args }}"
+            powershell -File build.ps1 -r "${{ inputs.onnxruntime-ref }}" ${{ matrix.args }}
           else
             ./build.sh -r "${{ inputs.onnxruntime-ref }}" ${{ matrix.args }}
           fi
