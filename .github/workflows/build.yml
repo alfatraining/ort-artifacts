@@ -6,9 +6,9 @@ on:
         type: string
         description: "ONNX Runtime repository reference, e.g., 'rel-1.22.2' or 'main'"
         default: "v1.22.2"
-      target:
+      target-preset:
         type: choice
-        description: "Specific target to build (leave empty to build all)"
+        description: "Select a predefined target"
         required: false
         default: "static-x86_64-windows-msvc-mt"
         options:
@@ -32,6 +32,10 @@ on:
           - static-aarch64-ios-simulator
           - dylib-aarch64-android
           - static-aarch64-android
+      target-custom:
+        type: string
+        description: "Custom target filter (overrides preset if specified, supports substring matching)"
+        required: false
 
 env:
   GCC_VERSION: '11'
@@ -106,21 +110,21 @@ jobs:
             runs-on: ubuntu-24.04
     steps:
       - name: Install cross-compile tools
-        if: (inputs.target == 'all' || matrix.target == inputs.target) && (matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux')
+        if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux')
         run: |
           sudo apt update && sudo apt install -y gcc make gcc-11-aarch64-linux-gnu g++-11-aarch64-linux-gnu binutils-aarch64-linux-gnu
       - uses: actions/checkout@v4
-        if: inputs.target == 'all' || matrix.target == inputs.target
+        if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
       - uses: actions/setup-java@v4
-        if: (inputs.target == 'all' || matrix.target == inputs.target) && (matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android')
+        if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android')
         with:
           java-version: "17"
           distribution: "temurin"
       - uses: android-actions/setup-android@v3
-        if: (inputs.target == 'all' || matrix.target == inputs.target) && (matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android')
+        if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android')
       - uses: nttld/setup-ndk@v1
         id: setup-ndk
-        if: (inputs.target == 'all' || matrix.target == inputs.target) && (matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android')
+        if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android')
         with:
           add-to-path: false
           ndk-version: r28
@@ -132,7 +136,7 @@ jobs:
       #     arch: ${{ matrix.arch }}
       #     release: ${{ matrix.release }}
       - name: Run builder
-        if: inputs.target == 'all' || matrix.target == inputs.target
+        if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         shell: bash
@@ -144,13 +148,13 @@ jobs:
           fi
       # See: https://github.com/microsoft/onnxruntime/issues/24911
       - name: Remove executable stack flag
-        if: (inputs.target == 'all' || matrix.target == inputs.target) && (matrix.target == 'dylib-x86_64-linux' || matrix.target == 'dylib-aarch64-linux' || matrix.target == 'dylib-aarch64-android')
+        if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-x86_64-linux' || matrix.target == 'dylib-aarch64-linux' || matrix.target == 'dylib-aarch64-android')
         run: |
           sudo apt-get update
           sudo apt-get install -y patchelf
           patchelf --clear-execstack artifact/onnxruntime/lib/libonnxruntime_sx.so
       - uses: actions/upload-artifact@v4
-        if: inputs.target == 'all' || matrix.target == inputs.target
+        if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
         with:
           name: ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}
           path: build/artifact
