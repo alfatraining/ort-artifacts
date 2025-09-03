@@ -153,5 +153,5 @@ jobs:
         if: inputs.target == 'all' || matrix.target == inputs.target
         with:
           name: ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}
-          path: artifact
+          path: build/artifact
           if-no-files-found: error
