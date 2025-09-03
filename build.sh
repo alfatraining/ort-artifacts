@@ -21,6 +21,9 @@ USE_WEBGPU="OFF"
 USE_OPENVINO="OFF"
 USE_NNAPI="OFF"
 DRY_RUN="OFF"
+FORCE_UPDATE="OFF"
+CLEAN="OFF"
+CLEAN_ALL="OFF"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -101,6 +104,18 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN="ON"
             shift
             ;;
+        --force-update)
+            FORCE_UPDATE="ON"
+            shift
+            ;;
+        --clean)
+            CLEAN="ON"
+            shift
+            ;;
+        --clean-all)
+            CLEAN_ALL="ON"
+            shift
+            ;;
         -h|--help)
             echo "Usage: $0 [options]"
             echo ""
@@ -124,6 +139,9 @@ while [[ $# -gt 0 ]]; do
             echo "      --openvino               Enable OpenVINO EP"
             echo "      --nnapi                  Enable NNAPI EP"
             echo "      --dry-run                Print CMake command without executing"
+            echo "      --force-update           Force update of ONNX Runtime repository (re-clone)"
+            echo "      --clean                  Clean build artifacts but preserve ONNX Runtime repository"
+            echo "      --clean-all              Clean everything including ONNX Runtime repository"
             echo "  -h, --help                   Show this help message"
             exit 0
             ;;
@@ -135,6 +153,75 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+# Handle cleaning operations
+if [[ "$CLEAN" == "ON" || "$CLEAN_ALL" == "ON" ]]; then
+    BUILD_DIR="build"
+    
+    if [[ "$CLEAN_ALL" == "ON" ]]; then
+        echo -e "${YELLOW}Performing complete clean (including ONNX Runtime repository)...${NC}"
+        if [[ -d "$BUILD_DIR" ]]; then
+            rm -rf "$BUILD_DIR"
+            echo -e "${GREEN}Build directory completely removed.${NC}"
+        else
+            echo -e "${YELLOW}Build directory does not exist - nothing to clean.${NC}"
+        fi
+    elif [[ "$CLEAN" == "ON" ]]; then
+        echo -e "${YELLOW}Performing selective clean (preserving ONNX Runtime repository)...${NC}"
+        
+        if [[ -d "$BUILD_DIR" ]]; then
+            ONNX_RUNTIME_DIR="$BUILD_DIR/onnxruntime"
+            STAMP_DIR="$BUILD_DIR/onnxruntime-prefix/src/onnxruntime-stamp"
+            TEMP_DIR=""
+            TEMP_STAMP_DIR=""
+            
+            # If ONNX Runtime repository exists, preserve it
+            if [[ -d "$ONNX_RUNTIME_DIR" ]]; then
+                TEMP_DIR="/tmp/onnxruntime-preserve-$(date +%Y%m%d-%H%M%S)"
+                echo -e "${CYAN}Temporarily preserving ONNX Runtime repository...${NC}"
+                mv "$ONNX_RUNTIME_DIR" "$TEMP_DIR"
+            fi
+            
+            # If stamp directory exists, preserve it to prevent re-cloning
+            if [[ -d "$STAMP_DIR" ]]; then
+                TEMP_STAMP_DIR="/tmp/onnxruntime-stamps-$(date +%Y%m%d-%H%M%S)"
+                echo -e "${CYAN}Temporarily preserving ExternalProject stamp files...${NC}"
+                mv "$STAMP_DIR" "$TEMP_STAMP_DIR"
+            fi
+            
+            # Remove build directory
+            rm -rf "$BUILD_DIR"
+            echo -e "${GREEN}Build artifacts removed.${NC}"
+            
+            # Restore ONNX Runtime repository if it was preserved
+            if [[ -n "$TEMP_DIR" && -d "$TEMP_DIR" ]]; then
+                mkdir -p "$BUILD_DIR"
+                mv "$TEMP_DIR" "$ONNX_RUNTIME_DIR"
+                echo -e "${GREEN}ONNX Runtime repository restored.${NC}"
+            fi
+            
+            # Restore stamp files if they were preserved
+            if [[ -n "$TEMP_STAMP_DIR" && -d "$TEMP_STAMP_DIR" ]]; then
+                STAMP_PARENT_DIR="$BUILD_DIR/onnxruntime-prefix/src"
+                mkdir -p "$STAMP_PARENT_DIR"
+                mv "$TEMP_STAMP_DIR" "$STAMP_DIR"
+                echo -e "${GREEN}ExternalProject stamp files restored.${NC}"
+            fi
+        else
+            echo -e "${YELLOW}Build directory does not exist - nothing to clean.${NC}"
+        fi
+    fi
+
+    echo "Finished cleaning up."
+    exit 0
+fi
+
 # Select generator
 if [[ "$USE_NINJA" == "ON" ]]; then
     GENERATOR="-G Ninja"
@@ -143,17 +230,19 @@ else
 fi
 
 if [[ "$DRY_RUN" == "ON" ]]; then
-    echo "DRY RUN MODE - Commands that would be executed:"
+    echo -e "${YELLOW}DRY RUN MODE - Commands that would be executed:${NC}"
     echo ""
-    echo "cmake -S . -B build -DREFERENCE=\"$REFERENCE\" -DSTATIC_BUILD=\"$STATIC_BUILD\" -DUSE_NINJA=\"$USE_NINJA\" -DTARGET_ARCH=\"$TARGET_ARCH\" -DIPHONEOS=\"$IPHONEOS\" -DIPHONESIMULATOR=\"$IPHONESIMULATOR\" -DANDROID=\"$ANDROID\" -DANDROID_API=\"$ANDROID_API\" -DANDROID_ABI=\"$ANDROID_ABI\" -DWASM=\"$WASM\" -DEMSDK_VERSION=\"$EMSDK_VERSION\" -DMSVC_STATIC_RUNTIME=\"$MSVC_STATIC_RUNTIME\" -DUSE_DIRECTML=\"$USE_DIRECTML\" -DUSE_COREML=\"$USE_COREML\" -DUSE_XNNPACK=\"$USE_XNNPACK\" -DUSE_WEBGPU=\"$USE_WEBGPU\" -DUSE_OPENVINO=\"$USE_OPENVINO\" -DUSE_NNAPI=\"$USE_NNAPI\" $GENERATOR"
+    echo -e "${CYAN}cmake -S . -B build -DREFERENCE=$REFERENCE -DSTATIC_BUILD=$STATIC_BUILD -DUSE_NINJA=$USE_NINJA -DTARGET_ARCH=$TARGET_ARCH -DIPHONEOS=$IPHONEOS -DIPHONESIMULATOR=$IPHONESIMULATOR -DANDROID=$ANDROID -DANDROID_API=$ANDROID_API -DANDROID_ABI=$ANDROID_ABI -DWASM=$WASM -DEMSDK_VERSION=$EMSDK_VERSION -DMSVC_STATIC_RUNTIME=$MSVC_STATIC_RUNTIME -DUSE_DIRECTML=$USE_DIRECTML -DUSE_COREML=$USE_COREML -DUSE_XNNPACK=$USE_XNNPACK -DUSE_WEBGPU=$USE_WEBGPU -DUSE_OPENVINO=$USE_OPENVINO -DUSE_NNAPI=$USE_NNAPI -DFORCE_UPDATE=$FORCE_UPDATE$([[ -n "$GENERATOR" ]] && echo " $GENERATOR")${NC}"
     echo ""
-    echo "cmake --build build --config Release --parallel"
+    echo -e "${CYAN}cmake --build build --config Release --parallel 9${NC}"
     exit 0
 fi
 
-echo "Configuring ONNX Runtime build with CMake..."
+echo -e "${GREEN}Configuring ONNX Runtime build with CMake...${NC}"
 
 # Execute CMake configuration
+echo -e "${CYAN}Running: cmake -S . -B build -DREFERENCE=\"$REFERENCE\" -DSTATIC_BUILD=\"$STATIC_BUILD\" -DUSE_NINJA=\"$USE_NINJA\" -DTARGET_ARCH=\"$TARGET_ARCH\" -DIPHONEOS=\"$IPHONEOS\" -DIPHONESIMULATOR=\"$IPHONESIMULATOR\" -DANDROID=\"$ANDROID\" -DANDROID_API=\"$ANDROID_API\" -DANDROID_ABI=\"$ANDROID_ABI\" -DWASM=\"$WASM\" -DEMSDK_VERSION=\"$EMSDK_VERSION\" -DMSVC_STATIC_RUNTIME=\"$MSVC_STATIC_RUNTIME\" -DUSE_DIRECTML=\"$USE_DIRECTML\" -DUSE_COREML=\"$USE_COREML\" -DUSE_XNNPACK=\"$USE_XNNPACK\" -DUSE_WEBGPU=\"$USE_WEBGPU\" -DUSE_OPENVINO=\"$USE_OPENVINO\" -DUSE_NNAPI=\"$USE_NNAPI\" -DFORCE_UPDATE=\"$FORCE_UPDATE\" $GENERATOR${NC}"
+
 cmake -S . -B build \
     -DREFERENCE="$REFERENCE" \
     -DSTATIC_BUILD="$STATIC_BUILD" \
@@ -173,11 +262,32 @@ cmake -S . -B build \
     -DUSE_WEBGPU="$USE_WEBGPU" \
     -DUSE_OPENVINO="$USE_OPENVINO" \
     -DUSE_NNAPI="$USE_NNAPI" \
+    -DFORCE_UPDATE="$FORCE_UPDATE" \
     $GENERATOR
 
-echo "Building ONNX Runtime..."
+if [[ $? -ne 0 ]]; then
+    echo -e "${RED}CMake configuration failed with exit code $?${NC}" >&2
+    exit 1
+fi
+
+echo -e "${GREEN}Building ONNX Runtime...${NC}"
 
 # Build the project
 cmake --build build --config Release --parallel
 
-echo "Build completed successfully!"
+if [[ $? -ne 0 ]]; then
+    echo -e "${RED}CMake build failed with exit code $?${NC}" >&2
+    exit 1
+fi
+
+echo -e "${GREEN}Installing...${NC}"
+
+# Install the project
+cmake --install build
+
+if [[ $? -ne 0 ]]; then
+    echo -e "${RED}CMake install failed with exit code $?${NC}" >&2
+    exit 1
+fi
+
+echo -e "${GREEN}Completed successfully!${NC}"
