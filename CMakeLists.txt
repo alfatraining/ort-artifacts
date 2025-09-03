@@ -149,24 +149,72 @@ if(WASM)
     return() # Early return like build.ts
 endif()
 
-# Include ExternalProject module for non-WASM builds
-include(ExternalProject)
+# Clone ONNX Runtime if needed
+set(ONNXRUNTIME_ROOT ${CMAKE_CURRENT_BINARY_DIR}/onnxruntime)
+if(NOT EXISTS ${ONNXRUNTIME_ROOT} OR FORCE_UPDATE)
+    if(FORCE_UPDATE AND EXISTS ${ONNXRUNTIME_ROOT})
+        message(STATUS "Force update requested - removing existing ONNX Runtime...")
+        file(REMOVE_RECURSE ${ONNXRUNTIME_ROOT})
+    endif()
+    
+    message(STATUS "Cloning ONNX Runtime...")
+    execute_process(
+        COMMAND git clone https://github.com/microsoft/onnxruntime --recursive --single-branch --depth 1 --branch ${REFERENCE}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        RESULT_VARIABLE CLONE_RESULT
+    )
+    if(NOT CLONE_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to clone ONNX Runtime")
+    endif()
+endif()
 
-# Collect patch files in alphabetical order
+# Reset and clean repository
+execute_process(
+    COMMAND git reset --hard HEAD
+    WORKING_DIRECTORY ${ONNXRUNTIME_ROOT}
+)
+execute_process(
+    COMMAND git clean -fd
+    WORKING_DIRECTORY ${ONNXRUNTIME_ROOT}
+)
+
+# Apply patches
+message(STATUS "Applying patches...")
 file(GLOB PATCH_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/patches/all/*.patch)
 list(SORT PATCH_FILES)
-
-# Build patch command
-set(PATCH_COMMANDS git reset --hard HEAD)
-list(APPEND PATCH_COMMANDS COMMAND git clean -fd)
-#foreach(PATCH_FILE ${PATCH_FILES})
-    #list(APPEND PATCH_COMMANDS COMMAND git apply ${PATCH_FILE} --ignore-whitespace --recount --verbose)
-#endforeach()
+foreach(PATCH_FILE ${PATCH_FILES})
+    get_filename_component(PATCH_NAME ${PATCH_FILE} NAME)
+    message(STATUS "Applying ${PATCH_NAME}...")
+    execute_process(
+        COMMAND git apply ${PATCH_FILE} --ignore-whitespace --recount --verbose
+        WORKING_DIRECTORY ${ONNXRUNTIME_ROOT}
+        RESULT_VARIABLE PATCH_RESULT
+        ERROR_QUIET
+    )
+    if(NOT PATCH_RESULT EQUAL 0)
+        message(WARNING "Failed to apply patch ${PATCH_NAME} - continuing anyway")
+    endif()
+endforeach()
 
 # For static builds, copy the external static-build CMakeLists.txt into the source tree
 if(STATIC_BUILD)
-    list(APPEND PATCH_COMMANDS COMMAND ${CMAKE_COMMAND} -E make_directory <SOURCE_DIR>/static-build)
-    list(APPEND PATCH_COMMANDS COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/src/static-build/CMakeLists.txt <SOURCE_DIR>/static-build/CMakeLists.txt)
+    message(STATUS "Preparing static build configuration...")
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${ONNXRUNTIME_ROOT}/static-build
+        RESULT_VARIABLE MKDIR_RESULT
+    )
+    if(NOT MKDIR_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to create static-build directory")
+    endif()
+    
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/src/static-build/CMakeLists.txt ${ONNXRUNTIME_ROOT}/static-build/CMakeLists.txt
+        RESULT_VARIABLE COPY_RESULT
+    )
+    if(NOT COPY_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to copy static-build CMakeLists.txt")
+    endif()
+    message(STATUS "Static build configuration prepared successfully")
 endif()
 
 # Build CMAKE_ARGS based on options - basic flags across all targets
@@ -186,7 +234,7 @@ if(STATIC_BUILD)
     set(SOURCE_SUBDIR static-build)
     list(APPEND CMAKE_ARGS -DONNXRUNTIME_SOURCE_DIR=<SOURCE_DIR>)
     list(APPEND CMAKE_ARGS -Donnxruntime_BUILD_SHARED_LIB=OFF)
-    list(APPEND CMAKE_ARGS -DBUILD_SHARED_LIB=OFF)
+    list(APPEND CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF)
     set(BUILD_SHARED_LIBS OFF)
 else()
     set(SOURCE_SUBDIR cmake)
@@ -309,27 +357,53 @@ if(USE_NNAPI AND ANDROID)
     list(APPEND CMAKE_ARGS -Donnxruntime_USE_NNAPI_BUILTIN=ON)
 endif()
 
-# Set up generator
-if(USE_NINJA)
-    set(EXTERNAL_GENERATOR "Ninja")
+# Determine source directory based on build type
+if(STATIC_BUILD)
+    set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/static-build)
+    # Add ONNXRUNTIME_SOURCE_DIR for static builds
+    list(APPEND CMAKE_ARGS -DONNXRUNTIME_SOURCE_DIR=${ONNXRUNTIME_ROOT})
 else()
-    set(EXTERNAL_GENERATOR "")
+    set(SOURCE_DIR ${ONNXRUNTIME_ROOT}/cmake)
 endif()
 
-# Create the ExternalProject
-ExternalProject_Add(onnxruntime
-    GIT_REPOSITORY https://github.com/microsoft/onnxruntime
-    GIT_TAG ${REFERENCE}
-    GIT_SHALLOW ON
-    GIT_SUBMODULES_RECURSE ON
-    GIT_PROGRESS ON
-    UPDATE_DISCONNECTED $<NOT:${FORCE_UPDATE}>
-    PATCH_COMMAND ${PATCH_COMMANDS}
-    SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/onnxruntime
-    SOURCE_SUBDIR ${SOURCE_SUBDIR}
-    CMAKE_GENERATOR ${EXTERNAL_GENERATOR}
-    CMAKE_ARGS ${CMAKE_ARGS}
-    BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release --parallel
-    INSTALL_COMMAND ${CMAKE_COMMAND} --install <BINARY_DIR>
-    STEP_TARGETS update
+# Add generator if specified
+if(USE_NINJA)
+    list(APPEND CMAKE_ARGS -G Ninja)
+endif()
+
+# Execute cmake configuration
+message(STATUS "Configuring ONNX Runtime build...")
+execute_process(
+    COMMAND ${CMAKE_COMMAND} -S ${SOURCE_DIR} -B build ${CMAKE_ARGS}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    RESULT_VARIABLE CONFIGURE_RESULT
 )
+if(NOT CONFIGURE_RESULT EQUAL 0)
+    message(FATAL_ERROR "CMake configuration failed")
+endif()
+
+# Execute cmake build
+message(STATUS "Building ONNX Runtime...")
+execute_process(
+    COMMAND ${CMAKE_COMMAND} --build build --config Release --parallel
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    RESULT_VARIABLE BUILD_RESULT
+)
+if(NOT BUILD_RESULT EQUAL 0)
+    message(FATAL_ERROR "CMake build failed")
+endif()
+
+# Execute cmake install
+message(STATUS "Installing ONNX Runtime...")
+execute_process(
+    COMMAND ${CMAKE_COMMAND} --install build
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    RESULT_VARIABLE INSTALL_RESULT
+)
+if(NOT INSTALL_RESULT EQUAL 0)
+    message(FATAL_ERROR "CMake install failed")
+endif()
+
+message(STATUS "ONNX Runtime build completed successfully")
+
+

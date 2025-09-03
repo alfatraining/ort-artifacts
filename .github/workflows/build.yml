@@ -6,12 +6,39 @@ on:
         type: string
         description: "ONNX Runtime repository reference, e.g., 'rel-1.22.2' or 'main'"
         default: main
+      target:
+        type: choice
+        description: "Specific target to build (leave empty to build all)"
+        required: false
+        default: "all"
+        options:
+          - "all"
+          - dylib-aarch64-linux
+          - static-aarch64-linux
+          - dylib-x86_64-linux
+          - static-x86_64-linux
+          - dylib-aarch64-macos
+          - static-aarch64-macos
+          - dylib-x86_64-macos
+          - static-x86_64-macos
+          - dylib-x86_64-windows-msvc-md
+          - static-x86_64-windows-msvc-md
+          - dylib-x86_64-windows-msvc-mt
+          - static-x86_64-windows-msvc-mt
+          - wasm32-emscripten
+          - dylib-aarch64-ios
+          - static-aarch64-ios
+          - dylib-aarch64-ios-simulator
+          - static-aarch64-ios-simulator
+          - dylib-aarch64-android
+          - static-aarch64-android
+
 env:
   GCC_VERSION: '11'
   CMAKE_VERSION: '3.28'
   PYTHON_VERSION: '3.10'
-  NODE_VERSION: '18'
   XCODE_VERSION: '14.3.1'
+
 jobs:
   build:
     name: Build
@@ -33,7 +60,7 @@ jobs:
             args: "--static --xnnpack -N"
             runs-on: ubuntu-24.04
           - target: dylib-aarch64-macos
-            args: "-A aarch64 --xnnpack -N" # CoreML requires macOS 13 or newer.
+            args: "-A aarch64 --xnnpack -N"
             runs-on: macos-13
           - target: static-aarch64-macos
             args: "--static -A aarch64 --xnnpack -N"
@@ -79,20 +106,21 @@ jobs:
             runs-on: ubuntu-24.04
     steps:
       - name: Install cross-compile tools
-        if: matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux'
+        if: (inputs.target == 'all' || matrix.target == inputs.target) && (matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux')
         run: |
           sudo apt update && sudo apt install -y gcc make gcc-11-aarch64-linux-gnu g++-11-aarch64-linux-gnu binutils-aarch64-linux-gnu
       - uses: actions/checkout@v4
+        if: inputs.target == 'all' || matrix.target == inputs.target
       - uses: actions/setup-java@v4
-        if: matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android'
+        if: (inputs.target == 'all' || matrix.target == inputs.target) && (matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android')
         with:
           java-version: "17"
           distribution: "temurin"
       - uses: android-actions/setup-android@v3
-        if: matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android'
+        if: (inputs.target == 'all' || matrix.target == inputs.target) && (matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android')
       - uses: nttld/setup-ndk@v1
         id: setup-ndk
-        if: matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android'
+        if: (inputs.target == 'all' || matrix.target == inputs.target) && (matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android')
         with:
           add-to-path: false
           ndk-version: r28
@@ -103,22 +131,26 @@ jobs:
       #     version: "2024.5"
       #     arch: ${{ matrix.arch }}
       #     release: ${{ matrix.release }}
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
       - name: Run builder
+        if: inputs.target == 'all' || matrix.target == inputs.target
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
-        run:
-          deno run -A src/build.ts -r ${{ inputs.onnxruntime-ref }} ${{ matrix.args }}
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            powershell -File build.ps1 -OnnxRuntimeRef "${{ inputs.onnxruntime-ref }}" -Args "${{ matrix.args }}"
+          else
+            ./build.sh "${{ inputs.onnxruntime-ref }}" ${{ matrix.args }}
+          fi
       # See: https://github.com/microsoft/onnxruntime/issues/24911
       - name: Remove executable stack flag
-        if: matrix.target == 'dylib-x86_64-linux' || matrix.target == 'dylib-aarch64-linux' || matrix.target == 'dylib-aarch64-android'
+        if: (inputs.target == 'all' || matrix.target == inputs.target) && (matrix.target == 'dylib-x86_64-linux' || matrix.target == 'dylib-aarch64-linux' || matrix.target == 'dylib-aarch64-android')
         run: |
           sudo apt-get update
           sudo apt-get install -y patchelf
           patchelf --clear-execstack artifact/onnxruntime/lib/libonnxruntime_sx.so
       - uses: actions/upload-artifact@v4
+        if: inputs.target == 'all' || matrix.target == inputs.target
         with:
           name: ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}
           path: artifact

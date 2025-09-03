@@ -11,47 +11,9 @@ function Initialize-VSEnvironment {
     Write-Host "Setting up Visual Studio Developer Command Prompt environment..." -ForegroundColor Green
     
     try {
-        # Use vswhere to find Visual Studio installation
-        $vsWhere = "vswhere.exe"
-        $vsInstallPath = & $vsWhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-        
-        if (-not $vsInstallPath) {
-            throw "Visual Studio installation not found"
-        }
-        
-        Write-Host "Found Visual Studio at: $vsInstallPath" -ForegroundColor Cyan
-        
-        # Path to vcvarsall.bat
-        $vcvarsPath = Join-Path $vsInstallPath "VC\Auxiliary\Build\vcvarsall.bat"
-        
-        if (-not (Test-Path $vcvarsPath)) {
-            throw "vcvarsall.bat not found at: $vcvarsPath"
-        }
-        
-        # Determine architecture argument for vcvarsall.bat
-        $vcvarsArch = switch ($TARGET_ARCH) {
-            "x86_64" { "x64" }
-            "aarch64" { "arm64" }
-            default { "x64" }
-        }
-        
-        Write-Host "Setting up VS environment for architecture: $vcvarsArch" -ForegroundColor Cyan
-        
-        # Get environment variables from vcvarsall.bat
-        $envVars = cmd /c "`"$vcvarsPath`" $vcvarsArch && set" | Where-Object { $_ -match "^([^=]+)=(.*)$" }
-        
-        # Apply environment variables to current session
-        foreach ($envVar in $envVars) {
-            if ($envVar -match "^([^=]+)=(.*)$") {
-                $name = $matches[1]
-                $value = $matches[2]
-                
-                # Only set important build-related variables
-                if ($name -match "^(PATH|INCLUDE|LIB|LIBPATH|VCINSTALLDIR|VCTOOLSINSTALLDIR|WINDOWSSDKDIR|WINDOWSSDKVERSION)$") {
-                    [Environment]::SetEnvironmentVariable($name, $value, "Process")
-                }
-            }
-        }
+        $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+        Import-Module (Join-Path $vsPath "Common7\Tools\Microsoft.VisualStudio.DevShell.dll")
+        Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation -Arch amd64 -HostArch amd64
         
         Write-Host "Visual Studio environment initialized successfully" -ForegroundColor Green
     }
@@ -59,6 +21,7 @@ function Initialize-VSEnvironment {
         Write-Error "Failed to initialize Visual Studio environment: $_"
         exit 1
     }
+    # exit 0
 }
 
 # Default values matching build.ts
@@ -338,13 +301,20 @@ try {
     Write-Host "Building ONNX Runtime..." -ForegroundColor Green
     
     # Build the project
-    & cmake --build build --config Release --parallel
+    & cmake --build build --config Release --parallel 9
     
     if ($LASTEXITCODE -ne 0) {
         throw "CMake build failed with exit code $LASTEXITCODE"
     }
+
+    Write-Host "Installing..." -ForegroundColor Green
+    & cmake --install build
     
-    Write-Host "Build completed successfully!" -ForegroundColor Green
+    if ($LASTEXITCODE -ne 0) {
+        throw "CMake install failed with exit code $LASTEXITCODE"
+    }
+
+    Write-Host "Completed successfully!" -ForegroundColor Green
 }
 catch {
     Write-Error "Build failed: $_"
