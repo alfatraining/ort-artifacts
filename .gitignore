@@ -3,4 +3,4 @@
 shrimp-rules.md
 .mcp.json
 .claude/settings.local.json
-/build_test_optimized
+/build-*

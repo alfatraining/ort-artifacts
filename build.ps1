@@ -282,7 +282,7 @@ if ($DRY_RUN -eq "ON") {
     Write-Host ""
     Write-Host "cmake $($CMakeArgs -join ' ')" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "cmake --build build --config Release --parallel" -ForegroundColor Cyan
+    Write-Host "cmake --build build --config Release --parallel 9" -ForegroundColor Cyan
     exit 0
 }
 
@@ -301,7 +301,7 @@ try {
     Write-Host "Building ONNX Runtime..." -ForegroundColor Green
     
     # Build the project
-    & cmake --build build --config Release --parallel 9
+    & cmake --build build --config Release --parallel
     
     if ($LASTEXITCODE -ne 0) {
         throw "CMake build failed with exit code $LASTEXITCODE"
