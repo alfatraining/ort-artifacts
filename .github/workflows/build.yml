@@ -152,7 +152,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y patchelf
-          patchelf --clear-execstack artifact/onnxruntime/lib/libonnxruntime_sx.so
+          patchelf --clear-execstack build/artifact/onnxruntime/lib/libonnxruntime_sx.so
       - uses: actions/upload-artifact@v4
         if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
         with:
