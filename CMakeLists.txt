@@ -127,7 +127,7 @@ if(PLATFORM_DARWIN)
     # iOS vs macOS deployment target
     if(IPHONEOS OR IPHONESIMULATOR)
         list(APPEND CMAKE_ARGS -DCMAKE_OSX_DEPLOYMENT_TARGET=${IPHONE_DEPLOYMENT_TARGET})
-        list(APPEND CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=../cmake/onnxruntime_ios.toolchain.cmake)
+        list(APPEND CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=<SOURCE_DIR>/cmake/onnxruntime_ios.toolchain.cmake)
         if(IPHONEOS)
             list(APPEND CMAKE_ARGS -DCMAKE_OSX_SYSROOT=iphoneos)
         elseif(IPHONESIMULATOR)
@@ -159,7 +159,8 @@ endif()
 if(PLATFORM_LINUX AND NOT ANDROID AND TARGET_ARCH STREQUAL "aarch64")
     list(APPEND CMAKE_ARGS
         -Donnxruntime_CROSS_COMPILING=ON
-        -DCMAKE_TOOLCHAIN_FILE=${CMAKE_CURRENT_SOURCE_DIR}/toolchains/aarch64-unknown-linux-gnu.cmake
+        # -DCMAKE_TOOLCHAIN_FILE=${CMAKE_CURRENT_SOURCE_DIR}/toolchains/aarch64-unknown-linux-gnu.cmake
+        -DCMAKE_TOOLCHAIN_FILE=<SOURCE_DIR>/cmake/linux_arm64_crosscompile_toolchain.cmake
     )
 endif()
 
