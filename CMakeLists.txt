@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.26)
 project(ort_artifacts)
 
+include(ExternalProject)
+
 # Define all cache variables with defaults matching build.ts
 
 # Core options
@@ -74,147 +76,23 @@ if(USE_OPENVINO AND PLATFORM_DARWIN)
     message(FATAL_ERROR "OpenVINO EP is not available on macOS")
 endif()
 
-# WebAssembly special case - bypass CMake and use bash script directly
-if(WASM)
-    message(STATUS "WebAssembly build detected - using bash build script")
-    
-    # Clone ONNX Runtime if needed
-    set(ONNXRUNTIME_ROOT ${CMAKE_CURRENT_BINARY_DIR}/onnxruntime)
-    if(NOT EXISTS ${ONNXRUNTIME_ROOT})
-        message(STATUS "Cloning ONNX Runtime...")
-        execute_process(
-            COMMAND git clone https://github.com/microsoft/onnxruntime --recursive --single-branch --depth 1 --branch ${REFERENCE}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-            RESULT_VARIABLE CLONE_RESULT
-        )
-        if(NOT CLONE_RESULT EQUAL 0)
-            message(FATAL_ERROR "Failed to clone ONNX Runtime")
-        endif()
-    endif()
-    
-    # Reset and clean repository
-    execute_process(
-        COMMAND git reset --hard HEAD
-        WORKING_DIRECTORY ${ONNXRUNTIME_ROOT}
-    )
-    execute_process(
-        COMMAND git clean -fd
-        WORKING_DIRECTORY ${ONNXRUNTIME_ROOT}
-    )
-    
-    # Apply patches
-    message(STATUS "Applying patches...")
-    file(GLOB PATCH_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/patches/all/*.patch)
-    list(SORT PATCH_FILES)
-    foreach(PATCH_FILE ${PATCH_FILES})
-        get_filename_component(PATCH_NAME ${PATCH_FILE} NAME)
-        message(STATUS "Applying ${PATCH_NAME}...")
-        execute_process(
-            COMMAND git apply ${PATCH_FILE} --ignore-whitespace --recount --verbose
-            WORKING_DIRECTORY ${ONNXRUNTIME_ROOT}
-            RESULT_VARIABLE PATCH_RESULT
-            ERROR_QUIET
-        )
-        if(NOT PATCH_RESULT EQUAL 0)
-            message(WARNING "Failed to apply patch ${PATCH_NAME} - continuing anyway")
-        endif()
-    endforeach()
-    
-    # Prepare WebGPU argument
-    set(WEBGPU_ARG "")
-    if(USE_WEBGPU)
-        set(WEBGPU_ARG "--use_webgpu")
-    endif()
-    
-    # Execute bash build script directly
-    message(STATUS "Running WebAssembly build...")
-    execute_process(
-        COMMAND bash ./build.sh --config Release --build_wasm_static_lib --enable_wasm_simd --enable_wasm_threads --skip_tests --disable_wasm_exception_catching --disable_rtti --parallel ${WEBGPU_ARG} --emsdk_version ${EMSDK_VERSION}
-        WORKING_DIRECTORY ${ONNXRUNTIME_ROOT}
-        RESULT_VARIABLE WASM_BUILD_RESULT
-    )
-    
-    if(NOT WASM_BUILD_RESULT EQUAL 0)
-        message(FATAL_ERROR "WebAssembly build failed")
-    endif()
-    
-    # Copy artifacts
-    set(ARTIFACT_DIR ${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime/lib)
-    file(MAKE_DIRECTORY ${ARTIFACT_DIR})
-    file(COPY ${ONNXRUNTIME_ROOT}/build/Linux/Release/libonnxruntime_webassembly.a
-         DESTINATION ${ARTIFACT_DIR}/
-         RENAME libonnxruntime.a)
-    
-    message(STATUS "WebAssembly build completed successfully")
-    return() # Early return like build.ts
-endif()
-
-# Clone ONNX Runtime if needed
-set(ONNXRUNTIME_ROOT ${CMAKE_CURRENT_BINARY_DIR}/onnxruntime)
-if(NOT EXISTS ${ONNXRUNTIME_ROOT} OR FORCE_UPDATE)
-    if(FORCE_UPDATE AND EXISTS ${ONNXRUNTIME_ROOT})
-        message(STATUS "Force update requested - removing existing ONNX Runtime...")
-        file(REMOVE_RECURSE ${ONNXRUNTIME_ROOT})
-    endif()
-    
-    message(STATUS "Cloning ONNX Runtime...")
-    execute_process(
-        COMMAND git clone https://github.com/microsoft/onnxruntime --recursive --single-branch --depth 1 --branch ${REFERENCE}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        RESULT_VARIABLE CLONE_RESULT
-    )
-    if(NOT CLONE_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to clone ONNX Runtime")
-    endif()
-endif()
-
-# Reset and clean repository
-execute_process(
-    COMMAND git reset --hard HEAD
-    WORKING_DIRECTORY ${ONNXRUNTIME_ROOT}
-)
-execute_process(
-    COMMAND git clean -fd
-    WORKING_DIRECTORY ${ONNXRUNTIME_ROOT}
-)
-
-# Apply patches
-message(STATUS "Applying patches...")
+# Prepare patch command
 file(GLOB PATCH_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/patches/all/*.patch)
 list(SORT PATCH_FILES)
+set(PATCH_COMMAND "")
 foreach(PATCH_FILE ${PATCH_FILES})
-    get_filename_component(PATCH_NAME ${PATCH_FILE} NAME)
-    message(STATUS "Applying ${PATCH_NAME}...")
-    execute_process(
-        COMMAND git apply ${PATCH_FILE} --ignore-whitespace --recount --verbose
-        WORKING_DIRECTORY ${ONNXRUNTIME_ROOT}
-        RESULT_VARIABLE PATCH_RESULT
-        ERROR_QUIET
-    )
-    if(NOT PATCH_RESULT EQUAL 0)
-        message(WARNING "Failed to apply patch ${PATCH_NAME} - continuing anyway")
-    endif()
+    list(APPEND PATCH_COMMAND COMMAND git apply ${PATCH_FILE} --ignore-whitespace --recount || true)
 endforeach()
 
-# For static builds, copy the external static-build CMakeLists.txt into the source tree
+
+# Prepare static build configuration command
 if(STATIC_BUILD)
-    message(STATUS "Preparing static build configuration...")
-    execute_process(
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${ONNXRUNTIME_ROOT}/static-build
-        RESULT_VARIABLE MKDIR_RESULT
+    set(STATIC_BUILD_COMMAND
+        COMMAND ${CMAKE_COMMAND} -E make_directory <SOURCE_DIR>/static-build
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/src/static-build/CMakeLists.txt <SOURCE_DIR>/static-build/CMakeLists.txt
     )
-    if(NOT MKDIR_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to create static-build directory")
-    endif()
-    
-    execute_process(
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/src/static-build/CMakeLists.txt ${ONNXRUNTIME_ROOT}/static-build/CMakeLists.txt
-        RESULT_VARIABLE COPY_RESULT
-    )
-    if(NOT COPY_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to copy static-build CMakeLists.txt")
-    endif()
-    message(STATUS "Static build configuration prepared successfully")
+else()
+    set(STATIC_BUILD_COMMAND "")
 endif()
 
 # Build CMAKE_ARGS based on options - basic flags across all targets
@@ -357,53 +235,52 @@ if(USE_NNAPI AND ANDROID)
     list(APPEND CMAKE_ARGS -Donnxruntime_USE_NNAPI_BUILTIN=ON)
 endif()
 
-# Determine source directory based on build type
-if(STATIC_BUILD)
-    set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/static-build)
-    # Add ONNXRUNTIME_SOURCE_DIR for static builds
-    list(APPEND CMAKE_ARGS -DONNXRUNTIME_SOURCE_DIR=${ONNXRUNTIME_ROOT})
-else()
-    set(SOURCE_DIR ${ONNXRUNTIME_ROOT}/cmake)
-endif()
 
 # Add generator if specified
+#if(USE_NINJA)
+#    list(APPEND CMAKE_ARGS -G Ninja)
+#endif()
 if(USE_NINJA)
-    list(APPEND CMAKE_ARGS -G Ninja)
+    set(ORT_CMAKE_GENERATOR CMAKE_GENERATOR Ninja)
+else()
+    set(ORT_CMAKE_GENERATOR)
 endif()
 
-# Execute cmake configuration
-message(STATUS "Configuring ONNX Runtime build...")
-execute_process(
-    COMMAND ${CMAKE_COMMAND} -S ${SOURCE_DIR} -B build ${CMAKE_ARGS}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    RESULT_VARIABLE CONFIGURE_RESULT
-)
-if(NOT CONFIGURE_RESULT EQUAL 0)
-    message(FATAL_ERROR "CMake configuration failed")
+# WebAssembly special case handling
+if(WASM)
+    set(WEBGPU_ARG "")
+    if(USE_WEBGPU)
+        set(WEBGPU_ARG "--use_webgpu")
+    endif()
+    
+    ExternalProject_Add(onnxruntime
+        GIT_REPOSITORY https://github.com/microsoft/onnxruntime
+        GIT_TAG ${REFERENCE}
+        GIT_SUBMODULES_RECURSE ON
+        GIT_SHALLOW ON
+        PATCH_COMMAND ${PATCH_COMMAND}
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND bash ./build.sh --config Release --build_wasm_static_lib --enable_wasm_simd --enable_wasm_threads --skip_tests --disable_wasm_exception_catching --disable_rtti --parallel ${WEBGPU_ARG} --emsdk_version ${EMSDK_VERSION}
+        BUILD_IN_SOURCE ON
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime/lib
+                     && ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/build/Linux/Release/libonnxruntime_webassembly.a ${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime/lib/libonnxruntime.a
+        INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime
+    )
+else()
+    ExternalProject_Add(onnxruntime
+        GIT_REPOSITORY https://github.com/microsoft/onnxruntime
+        GIT_TAG ${REFERENCE}
+        GIT_SUBMODULES_RECURSE ON
+        GIT_SHALLOW ON
+        PATCH_COMMAND ${PATCH_COMMAND} ${STATIC_BUILD_COMMAND}
+        SOURCE_SUBDIR ${SOURCE_SUBDIR}
+        CMAKE_ARGS ${CMAKE_ARGS}
+        ${ORT_CMAKE_GENERATOR}
+        INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime
+        CMAKE_CACHE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+    )
 endif()
 
-# Execute cmake build
-message(STATUS "Building ONNX Runtime...")
-execute_process(
-    COMMAND ${CMAKE_COMMAND} --build build --config Release --parallel
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    RESULT_VARIABLE BUILD_RESULT
-)
-if(NOT BUILD_RESULT EQUAL 0)
-    message(FATAL_ERROR "CMake build failed")
-endif()
-
-# Execute cmake install
-message(STATUS "Installing ONNX Runtime...")
-execute_process(
-    COMMAND ${CMAKE_COMMAND} --install build
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    RESULT_VARIABLE INSTALL_RESULT
-)
-if(NOT INSTALL_RESULT EQUAL 0)
-    message(FATAL_ERROR "CMake install failed")
-endif()
-
-message(STATUS "ONNX Runtime build completed successfully")
+message(STATUS "ONNX Runtime ExternalProject configured successfully")
 
 
