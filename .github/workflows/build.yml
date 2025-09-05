@@ -112,10 +112,19 @@ jobs:
       - name: Install cross-compile tools
         if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux')
         run: |
-          #  sudo apt update && sudo apt install -y gcc make ninja-build gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
-          sudo apt update && sudo apt install -y gcc make ninja-build gcc-11-aarch64-linux-gnu g++-11-aarch64-linux-gnu binutils-aarch64-linux-gnu
-          sudo ln -sf /usr/bin/aarch64-linux-gnu-gcc-11 /usr/bin/aarch64-none-linux-gnu-gcc
-          sudo ln -sf /usr/bin/aarch64-linux-gnu-g++-11 /usr/bin/aarch64-none-linux-gnu-g++
+          # Install basic build tools
+          sudo apt update && sudo apt install -y make ninja-build wget xz-utils
+          
+          # Download and install Linaro ARM64 toolchain
+          wget -q https://developer.arm.com/-/media/Files/downloads/gnu-a/10.3-2021.07/binrel/gcc-arm-10.3-2021.07-x86_64-aarch64-none-linux-gnu.tar.xz
+          sudo mkdir -p /opt/linaro-toolchain
+          sudo tar -xf gcc-arm-10.3-2021.07-x86_64-aarch64-none-linux-gnu.tar.xz -C /opt/linaro-toolchain --strip-components=1
+          rm gcc-arm-10.3-2021.07-x86_64-aarch64-none-linux-gnu.tar.xz
+          
+          # Add toolchain to PATH and create symlinks for compatibility
+          echo "/opt/linaro-toolchain/bin" >> $GITHUB_PATH
+          sudo ln -sf /opt/linaro-toolchain/bin/aarch64-none-linux-gnu-gcc /usr/bin/aarch64-none-linux-gnu-gcc
+          sudo ln -sf /opt/linaro-toolchain/bin/aarch64-none-linux-gnu-g++ /usr/bin/aarch64-none-linux-gnu-g++
       - uses: actions/checkout@v4
         if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
       - uses: actions/setup-java@v4
@@ -142,6 +151,8 @@ jobs:
         if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          CMAKE_SYSROOT: ${{ (matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux') && '/opt/linaro-toolchain/aarch64-none-linux-gnu/libc' || '' }}
+          CMAKE_FIND_ROOT_PATH: ${{ (matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux') && '/opt/linaro-toolchain/aarch64-none-linux-gnu' || '' }}
         shell: bash
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
