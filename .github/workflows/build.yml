@@ -141,13 +141,14 @@ jobs:
           add-to-path: false
           ndk-version: r28
       # Following does not yet work on Ubuntu 24.04!
-      - uses: abrown/install-openvino-action@v10
+      # - uses: abrown/install-openvino-action@v10
+      - uses: JW-AV/install-openvino-action@v10.1
         if: contains(matrix.args, '--openvino')
         with:
           version: "2025.2"
           arch: ${{ contains(matrix.target, 'aarch64') && 'arm64' || 'x86_64' }}
           release: ${{ contains(matrix.target, 'linux') && (contains(matrix.target, 'aarch64') && 'ubuntu20' || 'ubuntu24') || '' }}
-          apt: true
+          # apt: true
       - name: Run builder
         if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
         env:
