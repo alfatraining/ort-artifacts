@@ -38,7 +38,7 @@ on:
         required: false
 
 env:
-  GCC_VERSION: '11'
+  GCC_VERSION: '14.3'
   CMAKE_VERSION: '3.28'
   PYTHON_VERSION: '3.10'
   XCODE_VERSION: '14.3.1'
@@ -144,7 +144,7 @@ jobs:
       - uses: abrown/install-openvino-action@v10
         if: contains(matrix.args, '--openvino')
         with:
-          version: "2025.1.0"
+          version: "2025.3"
           arch: ${{ contains(matrix.target, 'aarch64') && 'arm64' || 'x86_64' }}
           release: ${{ contains(matrix.target, 'windows') && 'windows' || 'ubuntu' }}
       - name: Run builder
