@@ -103,10 +103,10 @@ jobs:
             args: "--static --iphonesimulator -A aarch64 --xnnpack --coreml -N"
             runs-on: macos-13
           - target: dylib-aarch64-android
-            args: "--android -A aarch64 --xnnpack --nnapi -N --openvino"
+            args: "--android -A aarch64 --xnnpack --nnapi -N"
             runs-on: ubuntu-24.04
           - target: static-aarch64-android
-            args: "--static --android -A aarch64 --xnnpack --nnapi -N --openvino"
+            args: "--static --android -A aarch64 --xnnpack --nnapi -N"
             runs-on: ubuntu-24.04
     steps:
       - name: Install cross-compile tools
@@ -142,12 +142,11 @@ jobs:
           ndk-version: r28
       # Following does not yet work on Ubuntu 24.04!
       - uses: abrown/install-openvino-action@v10
-        # if: matrix.arch == 'x86_64' || matrix.arch == 'arm64'
-        if: contains(matrix.target. "x86_64") || contains(matrix.target, "aarch64")
+        if: contains(matrix.args, '--openvino')
         with:
           version: "2025.1.0"
-          arch: ${{ matrix.arch }}
-          release: ${{ matrix.release }}
+          arch: ${{ contains(matrix.target, 'aarch64') && 'arm64' || 'x86_64' }}
+          release: ${{ contains(matrix.target, 'windows') && 'windows' || 'ubuntu' }}
       - name: Run builder
         if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
         env:
