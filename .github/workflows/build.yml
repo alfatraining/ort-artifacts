@@ -64,16 +64,16 @@ jobs:
             args: "--static --xnnpack -N --openvino"
             runs-on: ubuntu-24.04
           - target: dylib-aarch64-macos
-            args: "-A aarch64 --xnnpack -N --openvino"
+            args: "-A aarch64 --xnnpack -N"
             runs-on: macos-13
           - target: static-aarch64-macos
-            args: "--static -A aarch64 --xnnpack -N --openvino"
+            args: "--static -A aarch64 --xnnpack -N"
             runs-on: macos-13
           - target: dylib-x86_64-macos
-            args: "--xnnpack -N --openvino"
+            args: "--xnnpack -N"
             runs-on: macos-13
           - target: static-x86_64-macos
-            args: "--static --xnnpack -N --openvino"
+            args: "--static --xnnpack -N"
             runs-on: macos-13
           - target: dylib-x86_64-windows-msvc-md
             args: "--directml --xnnpack --openvino"
@@ -91,16 +91,16 @@ jobs:
             args: "-W --webgpu"
             runs-on: ubuntu-24.04
           - target: dylib-aarch64-ios
-            args: "-A aarch64 --iphoneos --xnnpack --coreml -N --openvino"
+            args: "-A aarch64 --iphoneos --xnnpack --coreml -N"
             runs-on: macos-13
           - target: static-aarch64-ios
-            args: "--static --iphoneos -A aarch64 --xnnpack --coreml -N --openvino"
+            args: "--static --iphoneos -A aarch64 --xnnpack --coreml -N"
             runs-on: macos-13
           - target: dylib-aarch64-ios-simulator
-            args: "-A aarch64 --iphonesimulator --xnnpack --coreml -N --openvino"
+            args: "-A aarch64 --iphonesimulator --xnnpack --coreml -N"
             runs-on: macos-13
           - target: static-aarch64-ios-simulator
-            args: "--static --iphonesimulator -A aarch64 --xnnpack --coreml -N --openvino"
+            args: "--static --iphonesimulator -A aarch64 --xnnpack --coreml -N"
             runs-on: macos-13
           - target: dylib-aarch64-android
             args: "--android -A aarch64 --xnnpack --nnapi -N --openvino"
@@ -142,7 +142,8 @@ jobs:
           ndk-version: r28
       # Following does not yet work on Ubuntu 24.04!
       - uses: abrown/install-openvino-action@v10
-        if: matrix.arch == 'x86_64' || matrix.arch == 'arm64'
+        # if: matrix.arch == 'x86_64' || matrix.arch == 'arm64'
+        if: contains(matrix.target. "x86_64") || contains(matrix.target, "aarch64")
         with:
           version: "2025.1.0"
           arch: ${{ matrix.arch }}
