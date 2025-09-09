@@ -245,46 +245,6 @@ else
     fi
 fi
 
-# Prepare CMake arguments for dry-run display
-CMAKE_DISPLAY_ARGS=(
-    "-S ."
-    "-B build"
-    "-DREFERENCE=$REFERENCE"
-    "-DSTATIC_BUILD=$STATIC_BUILD"
-    "-DUSE_NINJA=$USE_NINJA"
-    "-DTARGET_ARCH=$TARGET_ARCH"
-    "-DIPHONEOS=$IPHONEOS"
-    "-DIPHONESIMULATOR=$IPHONESIMULATOR"
-    "-DANDROID=$ANDROID"
-    "-DANDROID_API=$ANDROID_API"
-    "-DANDROID_ABI=$ANDROID_ABI"
-    "-DWASM=$WASM"
-    "-DEMSDK_VERSION=$EMSDK_VERSION"
-    "-DMSVC_STATIC_RUNTIME=$MSVC_STATIC_RUNTIME"
-    "-DUSE_DIRECTML=$USE_DIRECTML"
-    "-DUSE_COREML=$USE_COREML"
-    "-DUSE_XNNPACK=$USE_XNNPACK"
-    "-DUSE_WEBGPU=$USE_WEBGPU"
-    "-DUSE_OPENVINO=$USE_OPENVINO"
-    "-DUSE_NNAPI=$USE_NNAPI"
-    "-DFORCE_UPDATE=$FORCE_UPDATE"
-    "${GENERATOR_ARGS[@]}"
-)
-
-if [[ "$DRY_RUN" == "ON" ]]; then
-    echo -e "${YELLOW}DRY RUN MODE - Commands that would be executed:${NC}"
-    echo ""
-    
-    if [[ "$IS_WINDOWS" == "true" && "$USE_NINJA" == "ON" ]]; then
-        echo -e "${CYAN}cmd.exe /c \"\\\"<VS_PATH>\\Common7\\Tools\\vsdevcmd.bat\\\" -no_logo -arch=amd64 -host_arch=amd64 && cmake ${CMAKE_DISPLAY_ARGS[*]} && cmake --build build --config Release --parallel && cmake --install build\"${NC}"
-    else
-        echo -e "${CYAN}cmake ${CMAKE_DISPLAY_ARGS[*]}${NC}"
-        echo -e "${CYAN}cmake --build build --config Release --parallel${NC}"
-        echo -e "${CYAN}cmake --install build${NC}"
-    fi
-    exit 0
-fi
-
 # Prepare CMake arguments
 CMAKE_ARGS=(
     "-S" "."
@@ -311,9 +271,7 @@ CMAKE_ARGS=(
     "${GENERATOR_ARGS[@]}"
 )
 
-echo -e "${GREEN}Configuring ONNX Runtime build with CMake...${NC}"
-
-# Execute CMake - use vsdevcmd.bat for Windows Ninja builds
+# Assemble the final command line exactly once
 if [[ "$IS_WINDOWS" == "true" && "$USE_NINJA" == "ON" ]]; then
     # Find Visual Studio installation using environment variable with parentheses
     PROGFILES_X86=$(printenv "ProgramFiles(x86)" 2>/dev/null || echo "")
@@ -331,12 +289,39 @@ if [[ "$IS_WINDOWS" == "true" && "$USE_NINJA" == "ON" ]]; then
     BUILD_CMD="cmake --build build --config Release --parallel"
     INSTALL_CMD="cmake --install build"
     
+    # Assemble the complete command line
+    FINAL_COMMAND=("$COMSPEC" "//c" "${VSDEVCMD} -no_logo -arch=amd64 -host_arch=amd64 && ${CMAKE_CMD} && ${BUILD_CMD} && ${INSTALL_CMD}")
+else
+    # Regular execution for non-Windows or Visual Studio generator - use array for proper argument handling
+    FINAL_COMMAND=("cmake" "${CMAKE_ARGS[@]}")
+    BUILD_COMMAND=("cmake" "--build" "build" "--config" "Release" "--parallel")
+    INSTALL_COMMAND=("cmake" "--install" "build")
+fi
+
+if [[ "$DRY_RUN" == "ON" ]]; then
+    echo -e "${YELLOW}DRY RUN MODE - Commands that would be executed:${NC}"
+    echo ""
+    
+    if [[ "$IS_WINDOWS" == "true" && "$USE_NINJA" == "ON" ]]; then
+        echo -e "${CYAN}${FINAL_COMMAND[*]}${NC}"
+    else
+        echo -e "${CYAN}${FINAL_COMMAND[*]}${NC}"
+        echo -e "${CYAN}${BUILD_COMMAND[*]}${NC}"
+        echo -e "${CYAN}${INSTALL_COMMAND[*]}${NC}"
+    fi
+    exit 0
+fi
+
+echo -e "${GREEN}Configuring ONNX Runtime build with CMake...${NC}"
+
+# Execute the assembled command line
+if [[ "$IS_WINDOWS" == "true" && "$USE_NINJA" == "ON" ]]; then
     echo -e "${CYAN}Running cmake via Visual Studio Developer Command Prompt...${NC}"
     
-    $COMSPEC //c "${VSDEVCMD} -no_logo -arch=amd64 -host_arch=amd64 && ${CMAKE_CMD} && ${BUILD_CMD} && ${INSTALL_CMD}"
+    "${FINAL_COMMAND[@]}"
 else
     # Regular execution for non-Windows or Visual Studio generator
-    cmake "${CMAKE_ARGS[@]}"
+    "${FINAL_COMMAND[@]}"
     
     if [[ $? -ne 0 ]]; then
         echo -e "${RED}CMake configuration failed${NC}" >&2
@@ -344,7 +329,7 @@ else
     fi
     
     echo -e "${GREEN}Building ONNX Runtime...${NC}"
-    cmake --build build --config Release --parallel
+    "${BUILD_COMMAND[@]}"
     
     if [[ $? -ne 0 ]]; then
         echo -e "${RED}CMake build failed${NC}" >&2
@@ -352,7 +337,7 @@ else
     fi
     
     echo -e "${GREEN}Installing...${NC}"
-    cmake --install build
+    "${INSTALL_COMMAND[@]}"
     
     if [[ $? -ne 0 ]]; then
         echo -e "${RED}CMake install failed${NC}" >&2
