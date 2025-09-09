@@ -38,7 +38,8 @@ on:
         required: false
 
 env:
-  GCC_VERSION: '14.3'
+  # GCC_VERSION: '14.3'
+  GCC_VERSION: '11'
   CMAKE_VERSION: '3.28'
   PYTHON_VERSION: '3.10'
   XCODE_VERSION: '14.3.1'
@@ -76,16 +77,16 @@ jobs:
             args: "--static --xnnpack -N"
             runs-on: macos-13
           - target: dylib-x86_64-windows-msvc-md
-            args: "--directml --xnnpack --openvino"
+            args: "--directml --xnnpack --openvino -N"
             runs-on: windows-2025
           - target: static-x86_64-windows-msvc-md
-            args: "--static --directml --xnnpack --openvino"
+            args: "--static --directml --xnnpack --openvino -N"
             runs-on: windows-2025
           - target: dylib-x86_64-windows-msvc-mt
-            args: "--mt --directml --xnnpack --openvino"
+            args: "--mt --directml --xnnpack --openvino -N"
             runs-on: windows-2025
           - target: static-x86_64-windows-msvc-mt
-            args: "--static --mt --directml --xnnpack --openvino"
+            args: "--static --mt --directml --xnnpack --openvino -N"
             runs-on: windows-2025
           - target: wasm32-emscripten
             args: "-W --webgpu"
@@ -157,11 +158,7 @@ jobs:
           CMAKE_FIND_ROOT_PATH: ${{ (matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux') && '/opt/linaro-toolchain/aarch64-none-linux-gnu' || '' }}
         shell: bash
         run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            powershell -File build.ps1 -r "${{ inputs.onnxruntime-ref }}" ${{ matrix.args }}
-          else
-            ./build.sh -r "${{ inputs.onnxruntime-ref }}" ${{ matrix.args }}
-          fi
+          ./build.sh -r "${{ inputs.onnxruntime-ref }}" ${{ matrix.args }}
       # See: https://github.com/microsoft/onnxruntime/issues/24911
       - name: Remove executable stack flag
         if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-x86_64-linux' || matrix.target == 'dylib-aarch64-linux' || matrix.target == 'dylib-aarch64-android')

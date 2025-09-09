@@ -1,6 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
+# Platform detection
+if [[ "${RUNNER_OS:-}" == "Windows" || "${OS:-}" == "Windows_NT" ]]; then
+    IS_WINDOWS=true
+else
+    IS_WINDOWS=false
+fi
+
 # Default values matching build.ts
 REFERENCE="main"
 STATIC_BUILD="OFF"
@@ -160,6 +167,7 @@ YELLOW='\033[0;33m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+
 # Handle cleaning operations
 if [[ "$CLEAN" == "ON" || "$CLEAN_ALL" == "ON" ]]; then
     BUILD_DIR="build"
@@ -222,72 +230,134 @@ if [[ "$CLEAN" == "ON" || "$CLEAN_ALL" == "ON" ]]; then
     exit 0
 fi
 
-# Select generator
-if [[ "$USE_NINJA" == "ON" ]]; then
-    GENERATOR="-G Ninja"
+# Configure generator arguments
+if [[ "$IS_WINDOWS" == "true" ]]; then
+    if [[ "$USE_NINJA" == "ON" ]]; then
+        GENERATOR_ARGS=("-G" "Ninja")
+    else
+        GENERATOR_ARGS=("-G" "Visual Studio 17 2022" "-A" "x64")
+    fi
 else
-    GENERATOR=""
+    if [[ "$USE_NINJA" == "ON" ]]; then
+        GENERATOR_ARGS=("-G" "Ninja")
+    else
+        GENERATOR_ARGS=()
+    fi
 fi
+
+# Prepare CMake arguments for dry-run display
+CMAKE_DISPLAY_ARGS=(
+    "-S ."
+    "-B build"
+    "-DREFERENCE=$REFERENCE"
+    "-DSTATIC_BUILD=$STATIC_BUILD"
+    "-DUSE_NINJA=$USE_NINJA"
+    "-DTARGET_ARCH=$TARGET_ARCH"
+    "-DIPHONEOS=$IPHONEOS"
+    "-DIPHONESIMULATOR=$IPHONESIMULATOR"
+    "-DANDROID=$ANDROID"
+    "-DANDROID_API=$ANDROID_API"
+    "-DANDROID_ABI=$ANDROID_ABI"
+    "-DWASM=$WASM"
+    "-DEMSDK_VERSION=$EMSDK_VERSION"
+    "-DMSVC_STATIC_RUNTIME=$MSVC_STATIC_RUNTIME"
+    "-DUSE_DIRECTML=$USE_DIRECTML"
+    "-DUSE_COREML=$USE_COREML"
+    "-DUSE_XNNPACK=$USE_XNNPACK"
+    "-DUSE_WEBGPU=$USE_WEBGPU"
+    "-DUSE_OPENVINO=$USE_OPENVINO"
+    "-DUSE_NNAPI=$USE_NNAPI"
+    "-DFORCE_UPDATE=$FORCE_UPDATE"
+    "${GENERATOR_ARGS[@]}"
+)
 
 if [[ "$DRY_RUN" == "ON" ]]; then
     echo -e "${YELLOW}DRY RUN MODE - Commands that would be executed:${NC}"
     echo ""
-    echo -e "${CYAN}cmake -S . -B build -DREFERENCE=$REFERENCE -DSTATIC_BUILD=$STATIC_BUILD -DUSE_NINJA=$USE_NINJA -DTARGET_ARCH=$TARGET_ARCH -DIPHONEOS=$IPHONEOS -DIPHONESIMULATOR=$IPHONESIMULATOR -DANDROID=$ANDROID -DANDROID_API=$ANDROID_API -DANDROID_ABI=$ANDROID_ABI -DWASM=$WASM -DEMSDK_VERSION=$EMSDK_VERSION -DMSVC_STATIC_RUNTIME=$MSVC_STATIC_RUNTIME -DUSE_DIRECTML=$USE_DIRECTML -DUSE_COREML=$USE_COREML -DUSE_XNNPACK=$USE_XNNPACK -DUSE_WEBGPU=$USE_WEBGPU -DUSE_OPENVINO=$USE_OPENVINO -DUSE_NNAPI=$USE_NNAPI -DFORCE_UPDATE=$FORCE_UPDATE$([[ -n "$GENERATOR" ]] && echo " $GENERATOR")${NC}"
-    echo ""
-    echo -e "${CYAN}cmake --build build --config Release --parallel 9${NC}"
+    
+    if [[ "$IS_WINDOWS" == "true" && "$USE_NINJA" == "ON" ]]; then
+        echo -e "${CYAN}cmd.exe /c \"\\\"<VS_PATH>\\Common7\\Tools\\vsdevcmd.bat\\\" -no_logo -arch=amd64 -host_arch=amd64 && cmake ${CMAKE_DISPLAY_ARGS[*]} && cmake --build build --config Release --parallel && cmake --install build\"${NC}"
+    else
+        echo -e "${CYAN}cmake ${CMAKE_DISPLAY_ARGS[*]}${NC}"
+        echo -e "${CYAN}cmake --build build --config Release --parallel${NC}"
+        echo -e "${CYAN}cmake --install build${NC}"
+    fi
     exit 0
 fi
 
+# Prepare CMake arguments
+CMAKE_ARGS=(
+    "-S" "."
+    "-B" "build"
+    "-DREFERENCE=$REFERENCE"
+    "-DSTATIC_BUILD=$STATIC_BUILD"
+    "-DUSE_NINJA=$USE_NINJA"
+    "-DTARGET_ARCH=$TARGET_ARCH"
+    "-DIPHONEOS=$IPHONEOS"
+    "-DIPHONESIMULATOR=$IPHONESIMULATOR"
+    "-DANDROID=$ANDROID"
+    "-DANDROID_API=$ANDROID_API"
+    "-DANDROID_ABI=$ANDROID_ABI"
+    "-DWASM=$WASM"
+    "-DEMSDK_VERSION=$EMSDK_VERSION"
+    "-DMSVC_STATIC_RUNTIME=$MSVC_STATIC_RUNTIME"
+    "-DUSE_DIRECTML=$USE_DIRECTML"
+    "-DUSE_COREML=$USE_COREML"
+    "-DUSE_XNNPACK=$USE_XNNPACK"
+    "-DUSE_WEBGPU=$USE_WEBGPU"
+    "-DUSE_OPENVINO=$USE_OPENVINO"
+    "-DUSE_NNAPI=$USE_NNAPI"
+    "-DFORCE_UPDATE=$FORCE_UPDATE"
+    "${GENERATOR_ARGS[@]}"
+)
+
 echo -e "${GREEN}Configuring ONNX Runtime build with CMake...${NC}"
 
-# Execute CMake configuration
-echo -e "${CYAN}Running: cmake -S . -B build -DREFERENCE=\"$REFERENCE\" -DSTATIC_BUILD=\"$STATIC_BUILD\" -DUSE_NINJA=\"$USE_NINJA\" -DTARGET_ARCH=\"$TARGET_ARCH\" -DIPHONEOS=\"$IPHONEOS\" -DIPHONESIMULATOR=\"$IPHONESIMULATOR\" -DANDROID=\"$ANDROID\" -DANDROID_API=\"$ANDROID_API\" -DANDROID_ABI=\"$ANDROID_ABI\" -DWASM=\"$WASM\" -DEMSDK_VERSION=\"$EMSDK_VERSION\" -DMSVC_STATIC_RUNTIME=\"$MSVC_STATIC_RUNTIME\" -DUSE_DIRECTML=\"$USE_DIRECTML\" -DUSE_COREML=\"$USE_COREML\" -DUSE_XNNPACK=\"$USE_XNNPACK\" -DUSE_WEBGPU=\"$USE_WEBGPU\" -DUSE_OPENVINO=\"$USE_OPENVINO\" -DUSE_NNAPI=\"$USE_NNAPI\" -DFORCE_UPDATE=\"$FORCE_UPDATE\" $GENERATOR${NC}"
-
-cmake -S . -B build \
-    -DREFERENCE="$REFERENCE" \
-    -DSTATIC_BUILD="$STATIC_BUILD" \
-    -DUSE_NINJA="$USE_NINJA" \
-    -DTARGET_ARCH="$TARGET_ARCH" \
-    -DIPHONEOS="$IPHONEOS" \
-    -DIPHONESIMULATOR="$IPHONESIMULATOR" \
-    -DANDROID="$ANDROID" \
-    -DANDROID_API="$ANDROID_API" \
-    -DANDROID_ABI="$ANDROID_ABI" \
-    -DWASM="$WASM" \
-    -DEMSDK_VERSION="$EMSDK_VERSION" \
-    -DMSVC_STATIC_RUNTIME="$MSVC_STATIC_RUNTIME" \
-    -DUSE_DIRECTML="$USE_DIRECTML" \
-    -DUSE_COREML="$USE_COREML" \
-    -DUSE_XNNPACK="$USE_XNNPACK" \
-    -DUSE_WEBGPU="$USE_WEBGPU" \
-    -DUSE_OPENVINO="$USE_OPENVINO" \
-    -DUSE_NNAPI="$USE_NNAPI" \
-    -DFORCE_UPDATE="$FORCE_UPDATE" \
-    $GENERATOR
-
-if [[ $? -ne 0 ]]; then
-    echo -e "${RED}CMake configuration failed with exit code $?${NC}" >&2
-    exit 1
-fi
-
-echo -e "${GREEN}Building ONNX Runtime...${NC}"
-
-# Build the project
-cmake --build build --config Release --parallel
-
-if [[ $? -ne 0 ]]; then
-    echo -e "${RED}CMake build failed with exit code $?${NC}" >&2
-    exit 1
-fi
-
-echo -e "${GREEN}Installing...${NC}"
-
-# Install the project
-cmake --install build
-
-if [[ $? -ne 0 ]]; then
-    echo -e "${RED}CMake install failed with exit code $?${NC}" >&2
-    exit 1
+# Execute CMake - use vsdevcmd.bat for Windows Ninja builds
+if [[ "$IS_WINDOWS" == "true" && "$USE_NINJA" == "ON" ]]; then
+    # Find Visual Studio installation using environment variable with parentheses
+    PROGFILES_X86=$(printenv "ProgramFiles(x86)" 2>/dev/null || echo "")
+    [[ -z "$PROGFILES_X86" ]] && PROGFILES_X86="/c/Program Files (x86)"
+    VSWHERE_PATH="$PROGFILES_X86/Microsoft Visual Studio/Installer/vswhere.exe"
+    VS_PATH=$("$VSWHERE_PATH" -latest -property installationPath 2>/dev/null || echo "")
+    if [[ -z "$VS_PATH" ]]; then
+        echo -e "${RED}Error: Visual Studio installation not found${NC}" >&2
+        exit 1
+    fi
+    
+    # Build command for cmd.exe execution - escape backslashes properly
+    VSDEVCMD="$(cygpath -d "${VS_PATH}")/Common7/Tools/vsdevcmd.bat"
+    CMAKE_CMD="cmake ${CMAKE_ARGS[*]}"
+    BUILD_CMD="cmake --build build --config Release --parallel"
+    INSTALL_CMD="cmake --install build"
+    
+    echo -e "${CYAN}Running cmake via Visual Studio Developer Command Prompt...${NC}"
+    
+    $COMSPEC //c "${VSDEVCMD} -no_logo -arch=amd64 -host_arch=amd64 && ${CMAKE_CMD} && ${BUILD_CMD} && ${INSTALL_CMD}"
+else
+    # Regular execution for non-Windows or Visual Studio generator
+    cmake "${CMAKE_ARGS[@]}"
+    
+    if [[ $? -ne 0 ]]; then
+        echo -e "${RED}CMake configuration failed${NC}" >&2
+        exit 1
+    fi
+    
+    echo -e "${GREEN}Building ONNX Runtime...${NC}"
+    cmake --build build --config Release --parallel
+    
+    if [[ $? -ne 0 ]]; then
+        echo -e "${RED}CMake build failed${NC}" >&2
+        exit 1
+    fi
+    
+    echo -e "${GREEN}Installing...${NC}"
+    cmake --install build
+    
+    if [[ $? -ne 0 ]]; then
+        echo -e "${RED}CMake install failed${NC}" >&2
+        exit 1
+    fi
 fi
 
 echo -e "${GREEN}Completed successfully!${NC}"
