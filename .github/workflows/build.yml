@@ -126,8 +126,8 @@ jobs:
           echo "/opt/linaro-toolchain/bin" >> $GITHUB_PATH
           sudo ln -sf /opt/linaro-toolchain/bin/aarch64-none-linux-gnu-gcc /usr/bin/aarch64-none-linux-gnu-gcc
           sudo ln -sf /opt/linaro-toolchain/bin/aarch64-none-linux-gnu-g++ /usr/bin/aarch64-none-linux-gnu-g++
-      - uses: actions/checkout@v4
-        if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
+      # - uses: actions/checkout@v4
+        # if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
       - uses: actions/setup-java@v4
         if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android')
         with:
@@ -141,15 +141,12 @@ jobs:
         with:
           add-to-path: false
           ndk-version: r28
-      # Following does not yet work on Ubuntu 24.04!
-      # - uses: abrown/install-openvino-action@v10
       - uses: JW-AV/install-openvino-action@v10.1
         if: contains(matrix.args, '--openvino')
         with:
           version: "2025.2"
           arch: ${{ contains(matrix.target, 'aarch64') && 'arm64' || 'x86_64' }}
           release: ${{ contains(matrix.target, 'linux') && (contains(matrix.target, 'aarch64') && 'ubuntu20' || 'ubuntu24') || '' }}
-          # apt: true
       - name: Run builder
         if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
         env:
@@ -159,6 +156,7 @@ jobs:
         shell: bash
         run: |
           ./build.sh -r "${{ inputs.onnxruntime-ref }}" ${{ matrix.args }}
+      
       # See: https://github.com/microsoft/onnxruntime/issues/24911
       - name: Remove executable stack flag
         if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-x86_64-linux' || matrix.target == 'dylib-aarch64-linux' || matrix.target == 'dylib-aarch64-android')
