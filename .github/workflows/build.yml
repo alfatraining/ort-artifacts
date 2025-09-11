@@ -126,8 +126,8 @@ jobs:
           echo "/opt/linaro-toolchain/bin" >> $GITHUB_PATH
           sudo ln -sf /opt/linaro-toolchain/bin/aarch64-none-linux-gnu-gcc /usr/bin/aarch64-none-linux-gnu-gcc
           sudo ln -sf /opt/linaro-toolchain/bin/aarch64-none-linux-gnu-g++ /usr/bin/aarch64-none-linux-gnu-g++
-      # - uses: actions/checkout@v4
-        # if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
+      - uses: actions/checkout@v4
+        if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
       - uses: actions/setup-java@v4
         if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android')
         with:
@@ -142,7 +142,7 @@ jobs:
           add-to-path: false
           ndk-version: r28
       - uses: JW-AV/install-openvino-action@v10.1
-        if: contains(matrix.args, '--openvino')
+        if: contains(matrix.args, '--openvino') && ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset))))
         with:
           version: "2025.2"
           arch: ${{ contains(matrix.target, 'aarch64') && 'arm64' || 'x86_64' }}

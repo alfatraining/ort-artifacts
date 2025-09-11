@@ -28,7 +28,6 @@ USE_WEBGPU="OFF"
 USE_OPENVINO="OFF"
 USE_NNAPI="OFF"
 DRY_RUN="OFF"
-FORCE_UPDATE="OFF"
 CLEAN="OFF"
 CLEAN_ALL="OFF"
 
@@ -111,10 +110,6 @@ while [[ $# -gt 0 ]]; do
 		DRY_RUN="ON"
 		shift
 		;;
-	--force-update)
-		FORCE_UPDATE="ON"
-		shift
-		;;
 	--clean)
 		CLEAN="ON"
 		shift
@@ -147,7 +142,7 @@ while [[ $# -gt 0 ]]; do
 		echo "      --nnapi                  Enable NNAPI EP"
 		echo "      --dry-run                Print CMake command without executing"
 		echo "      --force-update           Force update of ONNXRuntime repository (re-clone)"
-		echo "      --clean                  Clean build artifacts but preserve ONNXRuntime repository"
+		echo "      --clean                  Clean build directory but preserve ONNXRuntime repository"
 		echo "      --clean-all              Clean everything including ONNXRuntime repository"
 		echo "  -h, --help                   Show this help message"
 		exit 0
@@ -167,7 +162,7 @@ YELLOW='\033[0;33m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# handle cleaning without triggering re-cloning
+# convenience for local builds: handle cleaning without triggering re-cloning
 if [[ "$CLEAN" == "ON" || "$CLEAN_ALL" == "ON" ]]; then
 	BUILD_DIR="build"
 
@@ -230,19 +225,29 @@ if [[ "$CLEAN" == "ON" || "$CLEAN_ALL" == "ON" ]]; then
 fi
 
 # configure generator arguments
-if [[ "$IS_WINDOWS" == "true" ]]; then
-	if [[ "$USE_NINJA" == "ON" ]]; then
-		GENERATOR_ARGS=("-G" "Ninja")
-	else
-		GENERATOR_ARGS=("-G" "Visual Studio 17 2022" "-A" "x64")
-	fi
+if [[ "$USE_NINJA" == "ON" ]]; then
+	GENERATOR_ARGS=("-G" "Ninja")
 else
-	if [[ "$USE_NINJA" == "ON" ]]; then
-		GENERATOR_ARGS=("-G" "Ninja")
+	if [[ "$IS_WINDOWS" == "true" ]]; then
+		GENERATOR_ARGS=("-G" "Visual Studio 17 2022" "-A" "x64")
 	else
 		GENERATOR_ARGS=()
 	fi
 fi
+
+# if [[ "$IS_WINDOWS" == "true" ]]; then
+# 	if [[ "$USE_NINJA" == "ON" ]]; then
+# 		GENERATOR_ARGS=("-G" "Ninja")
+# 	else
+# 		GENERATOR_ARGS=("-G" "Visual Studio 17 2022" "-A" "x64")
+# 	fi
+# else
+# 	if [[ "$USE_NINJA" == "ON" ]]; then
+# 		GENERATOR_ARGS=("-G" "Ninja")
+# 	else
+# 		GENERATOR_ARGS=()
+# 	fi
+# fi
 
 # prepare CMake arguments
 CMAKE_ARGS=(
@@ -266,11 +271,10 @@ CMAKE_ARGS=(
 	"-DUSE_WEBGPU=$USE_WEBGPU"
 	"-DUSE_OPENVINO=$USE_OPENVINO"
 	"-DUSE_NNAPI=$USE_NNAPI"
-	"-DFORCE_UPDATE=$FORCE_UPDATE"
 	"${GENERATOR_ARGS[@]}"
 )
 
-# assemble the final command line
+# assemble the final command line -  Windows/ninja builds need a VS environment
 if [[ "$IS_WINDOWS" == "true" && "$USE_NINJA" == "ON" ]]; then
 	# find default VS installer path to obtain the `vswhere.exe` path
 	PROGFILES_X86=$(printenv "ProgramFiles(x86)" 2>/dev/null || echo "")

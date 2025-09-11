@@ -3,12 +3,12 @@ project(ort_artifacts)
 
 include(ExternalProject)
 
-# Define all cache variables with defaults matching build.ts
+# Cache variables with defaults matching
 
 # Core options
 set(REFERENCE "main" CACHE STRING "Exact branch or tag")
 option(STATIC_BUILD "Build static library" OFF)
-option(USE_NINJA "Build with Ninja generator" OFF)
+# option(USE_NINJA "Build ORT with Ninja generator" OFF)
 set(TARGET_ARCH "x86_64" CACHE STRING "Target architecture")
 set_property(CACHE TARGET_ARCH PROPERTY STRINGS x86_64 aarch64)
 
@@ -238,14 +238,11 @@ endif()
 
 
 # Add generator if specified
-#if(USE_NINJA)
-#    list(APPEND CMAKE_ARGS -G Ninja)
-#endif()
-if(USE_NINJA)
-    set(ORT_CMAKE_GENERATOR CMAKE_GENERATOR Ninja)
-else()
-    set(ORT_CMAKE_GENERATOR)
-endif()
+# if(USE_NINJA)
+    # set(ORT_CMAKE_GENERATOR CMAKE_GENERATOR Ninja)
+# else()
+    # set(ORT_CMAKE_GENERATOR)
+# endif()
 
 # WebAssembly special case handling
 if(WASM)
@@ -276,7 +273,7 @@ else()
         PATCH_COMMAND ${PATCH_COMMAND} ${STATIC_BUILD_COMMAND}
         SOURCE_SUBDIR ${SOURCE_SUBDIR}
         CMAKE_ARGS ${CMAKE_ARGS}
-        ${ORT_CMAKE_GENERATOR}
+        # ${ORT_CMAKE_GENERATOR}
         INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime
         CMAKE_CACHE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
     )
