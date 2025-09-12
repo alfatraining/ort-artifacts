@@ -1,5 +1,5 @@
 diff --git a/cmake/onnxruntime_providers_openvino.cmake b/cmake/onnxruntime_providers_openvino.cmake
-index 5a831a106..09892be4d 100644
+index 5a831a106..7d11461f1 100644
 --- a/cmake/onnxruntime_providers_openvino.cmake
 +++ b/cmake/onnxruntime_providers_openvino.cmake
 @@ -46,6 +46,7 @@
@@ -10,7 +10,7 @@ index 5a831a106..09892be4d 100644
    endif()
    add_dependencies(onnxruntime_providers_openvino onnxruntime_providers_shared ${onnxruntime_EXTERNAL_DEPENDENCIES})
    target_include_directories(onnxruntime_providers_openvino SYSTEM PUBLIC ${ONNXRUNTIME_ROOT} ${CMAKE_CURRENT_BINARY_DIR} ${OpenVINO_INCLUDE_DIR} ${OPENVINO_INCLUDE_DIR_LIST} ${PYTHON_INCLUDE_DIRS} $ENV{OPENCL_INCS} $ENV{OPENCL_INCS}/../../cl_headers/)
-@@ -84,6 +85,33 @@
+@@ -84,6 +85,34 @@
              RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})
    endif()
  
@@ -21,14 +21,15 @@ index 5a831a106..09892be4d 100644
 +    set(OPENVINO_LIB_EXTENSION "so")
 +  endif()
 +
++  cmake_path(SET OPENVINO_PATH $ENV{INTEL_OPENVINO_DIR})
 +
 +  # Find OpenVINO runtime libraries in runtime/bin/intel64/Release
-+  file(GLOB OPENVINO_RUNTIME_LIBS "$ENV{INTEL_OPENVINO_DIR}/runtime/bin/intel64/Release/*.${OPENVINO_LIB_EXTENSION}")
++  file(GLOB OPENVINO_RUNTIME_LIBS "${OPENVINO_PATH}/runtime/bin/intel64/Release/*.${OPENVINO_LIB_EXTENSION}")
 +
 +  # Find OpenVINO TBB libraries in runtime/3rdparty/tbb/bin
-+  file(GLOB OPENVINO_TBB_LIBS "$ENV{INTEL_OPENVINO_DIR}/runtime/3rdparty/tbb/bin/*.${OPENVINO_LIB_EXTENSION}")
++  file(GLOB OPENVINO_TBB_LIBS "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/*.${OPENVINO_LIB_EXTENSION}")
 +
-+  message(FATAL_ERROR "OPENVINO: '$ENV{INTEL_OPENVINO_DIR}', '${OPENVINO_RUNTIME_LIBS}', '${OPENVINO_TBB_LIBS}'")
++  message(FATAL_ERROR "OPENVINO: '${OPENVINO_PATH}', '${OPENVINO_PATH}/runtime/bin/intel64/Release/*.${OPENVINO_LIB_EXTENSION}'='${OPENVINO_RUNTIME_LIBS}', '${OPENVINO_TBB_LIBS}'")
 +
 +  # Install all found libraries
 +  if(OPENVINO_RUNTIME_LIBS OR OPENVINO_TBB_LIBS)
