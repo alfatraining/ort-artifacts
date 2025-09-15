@@ -202,16 +202,17 @@ if(onnxruntime_USE_OPENVINO)
 
     # Install all found libraries
     if(OPENVINO_RUNTIME_LIB_FILES OR OPENVINO_RUNTIME_BIN_FILES OR OPENVINO_TBB_LIB_FILES OR OPENVINO_TBB_BIN_FILES)
-    install(
-        FILES
-        ${OPENVINO_RUNTIME_LIB_FILES}
-        ${OPENVINO_RUNTIME_BIN_FILES}
-        ${OPENVINO_TBB_LIB_FILES}
-        ${OPENVINO_TBB_BIN_FILES}
-        # DESTINATION
-        # ${CMAKE_INSTALL_LIBDIR}
-        TYPE LIB
-    )
+        install(
+            FILES
+            ${OPENVINO_RUNTIME_LIB_FILES}
+            ${OPENVINO_RUNTIME_BIN_FILES}
+            ${OPENVINO_TBB_LIB_FILES}
+            ${OPENVINO_TBB_BIN_FILES}
+            # DESTINATION
+            # ${CMAKE_INSTALL_LIBDIR}
+            TYPE LIB
+        )
+    endif()
 endif()
 
 install(
