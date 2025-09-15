@@ -8,7 +8,6 @@ include(ExternalProject)
 # Core options
 set(REFERENCE "main" CACHE STRING "Exact branch or tag")
 option(STATIC_BUILD "Build static library" OFF)
-# option(USE_NINJA "Build ORT with Ninja generator" OFF)
 set(TARGET_ARCH "x86_64" CACHE STRING "Target architecture")
 set_property(CACHE TARGET_ARCH PROPERTY STRINGS x86_64 aarch64)
 
@@ -235,14 +234,6 @@ endif()
 if(USE_NNAPI AND ANDROID)
     list(APPEND CMAKE_ARGS -Donnxruntime_USE_NNAPI_BUILTIN=ON)
 endif()
-
-
-# Add generator if specified
-# if(USE_NINJA)
-    # set(ORT_CMAKE_GENERATOR CMAKE_GENERATOR Ninja)
-# else()
-    # set(ORT_CMAKE_GENERATOR)
-# endif()
 
 # WebAssembly special case handling
 if(WASM)
