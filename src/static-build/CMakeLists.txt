@@ -190,6 +190,16 @@ if(onnxruntime_USE_OPENVINO)
     string(STRIP $ENV{INTEL_OPENVINO_DIR} OPENVINO_PATH_RAW)
     cmake_path(SET OPENVINO_PATH ${OPENVINO_PATH_RAW})
 
+    # Map target architecture to OpenVINO architecture directory name
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+        set(OPENVINO_ARCH "aarch64")
+    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$")
+        set(OPENVINO_ARCH "intel64")
+    else()
+        # Default fallback for other architectures
+        set(OPENVINO_ARCH "intel64")
+    endif()
+
     # Set library extension based on platform
     if(WIN32)
         set(OPENVINO_LIB_EXTENSION "dll")
@@ -208,12 +218,12 @@ if(onnxruntime_USE_OPENVINO)
 
     # Find OpenVINO runtime libraries
     file(GLOB OPENVINO_RUNTIME_FILES FOLLOW_SYMLINKS
-        "${OPENVINO_PATH}/runtime/lib/intel64/*.${OPENVINO_LIB_EXTENSION}"
-        "${OPENVINO_PATH}/runtime/lib/intel64/${OPENVINO_BUILD_CONFIG}/*.${OPENVINO_LIB_EXTENSION}"
-        "${OPENVINO_PATH}/runtime/bin/intel64/*.${OPENVINO_LIB_EXTENSION}"
-        "${OPENVINO_PATH}/runtime/bin/intel64/${OPENVINO_BUILD_CONFIG}/*.${OPENVINO_LIB_EXTENSION}")
+        "${OPENVINO_PATH}/runtime/lib/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
+        "${OPENVINO_PATH}/runtime/lib/${OPENVINO_ARCH}/${OPENVINO_BUILD_CONFIG}/*.${OPENVINO_LIB_EXTENSION}"
+        "${OPENVINO_PATH}/runtime/bin/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
+        "${OPENVINO_PATH}/runtime/bin/${OPENVINO_ARCH}/${OPENVINO_BUILD_CONFIG}/*.${OPENVINO_LIB_EXTENSION}")
 
-    # Find TBB libraries
+    # Find TBB libraries (no architecture subdirectory needed)
     file(GLOB OPENVINO_TBB_FILES FOLLOW_SYMLINKS
         "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib/*.${OPENVINO_LIB_EXTENSION}"
         "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/*.${OPENVINO_LIB_EXTENSION}")
