@@ -223,9 +223,12 @@ if(onnxruntime_USE_OPENVINO)
         "${OPENVINO_PATH}/runtime/bin/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
         "${OPENVINO_PATH}/runtime/bin/${OPENVINO_ARCH}/${OPENVINO_BUILD_CONFIG}/*.${OPENVINO_LIB_EXTENSION}")
 
-    # Find TBB libraries (no architecture subdirectory needed)
+    # Find TBB libraries (check both architecture-specific and generic paths)
     file(GLOB OPENVINO_TBB_FILES FOLLOW_SYMLINKS
+        "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
         "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib/*.${OPENVINO_LIB_EXTENSION}"
+        "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib64/*.${OPENVINO_LIB_EXTENSION}"
+        "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
         "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/*.${OPENVINO_LIB_EXTENSION}")
 
     # For release builds, exclude debug files
