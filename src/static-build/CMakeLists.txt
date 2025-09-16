@@ -231,10 +231,19 @@ if(onnxruntime_USE_OPENVINO)
         "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
         "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/*.${OPENVINO_LIB_EXTENSION}")
 
+    # Debug: Show what TBB files were found
+    message(STATUS "OpenVINO Debug: OPENVINO_PATH='${OPENVINO_PATH}'")
+    message(STATUS "OpenVINO Debug: OPENVINO_ARCH='${OPENVINO_ARCH}'")
+    message(STATUS "OpenVINO Debug: OPENVINO_LIB_EXTENSION='${OPENVINO_LIB_EXTENSION}'")
+    message(STATUS "OpenVINO Debug: TBB files found (before filtering): ${OPENVINO_TBB_FILES}")
+    message(STATUS "OpenVINO Debug: OpenVINO runtime files found (before filtering): ${OPENVINO_RUNTIME_FILES}")
+
     # For release builds, exclude debug files
     if(OPENVINO_BUILD_CONFIG STREQUAL "Release")
         list(FILTER OPENVINO_RUNTIME_FILES EXCLUDE REGEX "_debug\\.${OPENVINO_LIB_EXTENSION}$")
         list(FILTER OPENVINO_TBB_FILES EXCLUDE REGEX "_debug\\.${OPENVINO_LIB_EXTENSION}$")
+        message(STATUS "OpenVINO Debug: TBB files found (after Release filtering): ${OPENVINO_TBB_FILES}")
+        message(STATUS "OpenVINO Debug: OpenVINO runtime files found (after Release filtering): ${OPENVINO_RUNTIME_FILES}")
     endif()
 
     # file(GLOB_RECURSE ALL_DAMN_OPENVINO_FILES LIST_DIRECTORIES true RELATIVE "${OPENVINO_PATH}" "${OPENVINO_PATH}/*")
@@ -242,6 +251,8 @@ if(onnxruntime_USE_OPENVINO)
 
     # Install all found libraries
     if(OPENVINO_RUNTIME_FILES OR OPENVINO_TBB_FILES)
+        message(STATUS "OpenVINO Debug: About to install ${CMAKE_CURRENT_LIST_LINE} OpenVINO files: ${OPENVINO_RUNTIME_FILES}")
+        message(STATUS "OpenVINO Debug: About to install TBB files: ${OPENVINO_TBB_FILES}")
         install(
             FILES
             ${OPENVINO_RUNTIME_FILES}
@@ -250,6 +261,8 @@ if(onnxruntime_USE_OPENVINO)
             # ${CMAKE_INSTALL_LIBDIR}
             TYPE LIB
         )
+    else()
+        message(FATAL_ERROR "OpenVINO Debug: NO OPENVINO OR TBB FILES FOUND! OPENVINO_RUNTIME_FILES='${OPENVINO_RUNTIME_FILES}' OPENVINO_TBB_FILES='${OPENVINO_TBB_FILES}'")
     endif()
 endif()
 
