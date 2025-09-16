@@ -262,12 +262,12 @@ if(onnxruntime_USE_OPENVINO)
     if(OPENVINO_RUNTIME_FILES OR OPENVINO_TBB_FILES)
         message(STATUS "OpenVINO Debug: About to install OpenVINO files: ${OPENVINO_RUNTIME_FILES}")
         message(STATUS "OpenVINO Debug: About to install TBB files: ${OPENVINO_TBB_FILES}")
-        # Use DESTINATION instead of TYPE LIB to ensure symlinks are handled correctly
-        install(
-            FILES
+        message(STATUS "OpenVINO Debug: DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+        # Use file(INSTALL) with FOLLOW_SYMLINK_CHAIN to ensure symlinks are handled correctly
+        file(INSTALL
             ${OPENVINO_RUNTIME_FILES}
             ${OPENVINO_TBB_FILES}
-            DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
             FOLLOW_SYMLINK_CHAIN
         )
     else()
