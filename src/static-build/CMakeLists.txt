@@ -196,7 +196,7 @@ if(onnxruntime_USE_OPENVINO)
     elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$")
         set(OPENVINO_ARCH "intel64")
     else()
-        # Default fallback for other architectures
+        # Default fallback - to be reevaluated
         set(OPENVINO_ARCH "intel64")
     endif()
 
@@ -216,43 +216,34 @@ if(onnxruntime_USE_OPENVINO)
         set(OPENVINO_BUILD_CONFIG "Release")
     endif()
 
-    # Find OpenVINO runtime libraries (including versioned files and symlinks)
-    file(GLOB OPENVINO_RUNTIME_FILES FOLLOW_SYMLINKS
+    # Find OpenVINO runtime libraries (symlinks only - FOLLOW_SYMLINK_CHAIN will handle the rest)
+    file(GLOB OPENVINO_RUNTIME_FILES
         "${OPENVINO_PATH}/runtime/lib/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
-        "${OPENVINO_PATH}/runtime/lib/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}.*"
         "${OPENVINO_PATH}/runtime/lib/${OPENVINO_ARCH}/${OPENVINO_BUILD_CONFIG}/*.${OPENVINO_LIB_EXTENSION}"
-        "${OPENVINO_PATH}/runtime/lib/${OPENVINO_ARCH}/${OPENVINO_BUILD_CONFIG}/*.${OPENVINO_LIB_EXTENSION}.*"
         "${OPENVINO_PATH}/runtime/bin/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
-        "${OPENVINO_PATH}/runtime/bin/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}.*"
-        "${OPENVINO_PATH}/runtime/bin/${OPENVINO_ARCH}/${OPENVINO_BUILD_CONFIG}/*.${OPENVINO_LIB_EXTENSION}"
-        "${OPENVINO_PATH}/runtime/bin/${OPENVINO_ARCH}/${OPENVINO_BUILD_CONFIG}/*.${OPENVINO_LIB_EXTENSION}.*")
+        "${OPENVINO_PATH}/runtime/bin/${OPENVINO_ARCH}/${OPENVINO_BUILD_CONFIG}/*.${OPENVINO_LIB_EXTENSION}")
 
-    # Find TBB libraries (including versioned files and symlinks)
-    file(GLOB OPENVINO_TBB_FILES FOLLOW_SYMLINKS
+    # Find TBB libraries (symlinks only - FOLLOW_SYMLINK_CHAIN will handle the rest)
+    file(GLOB OPENVINO_TBB_FILES
         "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
-        "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}.*"
         "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib/*.${OPENVINO_LIB_EXTENSION}"
-        "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib/*.${OPENVINO_LIB_EXTENSION}.*"
         "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib64/*.${OPENVINO_LIB_EXTENSION}"
-        "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib64/*.${OPENVINO_LIB_EXTENSION}.*"
         "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
-        "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}.*"
-        "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/*.${OPENVINO_LIB_EXTENSION}"
-        "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/*.${OPENVINO_LIB_EXTENSION}.*")
+        "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/*.${OPENVINO_LIB_EXTENSION}")
 
     # Debug: Show what TBB files were found
-    message(STATUS "OpenVINO Debug: OPENVINO_PATH='${OPENVINO_PATH}'")
-    message(STATUS "OpenVINO Debug: OPENVINO_ARCH='${OPENVINO_ARCH}'")
-    message(STATUS "OpenVINO Debug: OPENVINO_LIB_EXTENSION='${OPENVINO_LIB_EXTENSION}'")
-    message(STATUS "OpenVINO Debug: TBB files found (before filtering): ${OPENVINO_TBB_FILES}")
-    message(STATUS "OpenVINO Debug: OpenVINO runtime files found (before filtering): ${OPENVINO_RUNTIME_FILES}")
+    # message(STATUS "OpenVINO Debug: OPENVINO_PATH='${OPENVINO_PATH}'")
+    # message(STATUS "OpenVINO Debug: OPENVINO_ARCH='${OPENVINO_ARCH}'")
+    # message(STATUS "OpenVINO Debug: OPENVINO_LIB_EXTENSION='${OPENVINO_LIB_EXTENSION}'")
+    # message(STATUS "OpenVINO Debug: TBB files found (before filtering): ${OPENVINO_TBB_FILES}")
+    # message(STATUS "OpenVINO Debug: OpenVINO runtime files found (before filtering): ${OPENVINO_RUNTIME_FILES}")
 
     # For release builds, exclude debug files
     if(OPENVINO_BUILD_CONFIG STREQUAL "Release")
         list(FILTER OPENVINO_RUNTIME_FILES EXCLUDE REGEX "_debug\\.${OPENVINO_LIB_EXTENSION}$")
         list(FILTER OPENVINO_TBB_FILES EXCLUDE REGEX "_debug\\.${OPENVINO_LIB_EXTENSION}$")
-        message(STATUS "OpenVINO Debug: TBB files found (after Release filtering): ${OPENVINO_TBB_FILES}")
-        message(STATUS "OpenVINO Debug: OpenVINO runtime files found (after Release filtering): ${OPENVINO_RUNTIME_FILES}")
+        # message(STATUS "OpenVINO Debug: TBB files found (after Release filtering): ${OPENVINO_TBB_FILES}")
+        # message(STATUS "OpenVINO Debug: OpenVINO runtime files found (after Release filtering): ${OPENVINO_RUNTIME_FILES}")
     endif()
 
     # file(GLOB_RECURSE ALL_DAMN_OPENVINO_FILES LIST_DIRECTORIES true RELATIVE "${OPENVINO_PATH}" "${OPENVINO_PATH}/*")
@@ -260,9 +251,9 @@ if(onnxruntime_USE_OPENVINO)
 
     # Install all found libraries
     if(OPENVINO_RUNTIME_FILES OR OPENVINO_TBB_FILES)
-        message(STATUS "OpenVINO Debug: About to install OpenVINO files: ${OPENVINO_RUNTIME_FILES}")
-        message(STATUS "OpenVINO Debug: About to install TBB files: ${OPENVINO_TBB_FILES}")
-        message(STATUS "OpenVINO Debug: DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+        # message(STATUS "OpenVINO Debug: About to install OpenVINO files: ${OPENVINO_RUNTIME_FILES}")
+        # message(STATUS "OpenVINO Debug: About to install TBB files: ${OPENVINO_TBB_FILES}")
+        # message(STATUS "OpenVINO Debug: DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
         # Use file(INSTALL) with FOLLOW_SYMLINK_CHAIN to ensure symlinks are handled correctly
         file(INSTALL
             ${OPENVINO_RUNTIME_FILES}
@@ -271,7 +262,7 @@ if(onnxruntime_USE_OPENVINO)
             FOLLOW_SYMLINK_CHAIN
         )
     else()
-        message(FATAL_ERROR "OpenVINO Debug: NO OPENVINO OR TBB FILES FOUND! OPENVINO_RUNTIME_FILES='${OPENVINO_RUNTIME_FILES}' OPENVINO_TBB_FILES='${OPENVINO_TBB_FILES}'")
+        # message(FATAL_ERROR "OpenVINO Debug: NO OPENVINO OR TBB FILES FOUND! OPENVINO_RUNTIME_FILES='${OPENVINO_RUNTIME_FILES}' OPENVINO_TBB_FILES='${OPENVINO_TBB_FILES}'")
     endif()
 endif()
 

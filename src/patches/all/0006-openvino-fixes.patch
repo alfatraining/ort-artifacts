@@ -1,0 +1,79 @@
+diff --git a/cmake/onnxruntime_providers_openvino.cmake b/cmake/onnxruntime_providers_openvino.cmake
+index 5a831a106..86f92d316 100644
+--- a/cmake/onnxruntime_providers_openvino.cmake
++++ b/cmake/onnxruntime_providers_openvino.cmake
+@@ -46,6 +46,7 @@
+ 
+   if(NOT MSVC)
+     target_compile_options(onnxruntime_providers_openvino PRIVATE "-Wno-parentheses")
++    target_compile_options(onnxruntime_providers_openvino PRIVATE "-Wno-free-nonheap-object")
+   endif()
+   add_dependencies(onnxruntime_providers_openvino onnxruntime_providers_shared ${onnxruntime_EXTERNAL_DEPENDENCIES})
+   target_include_directories(onnxruntime_providers_openvino SYSTEM PUBLIC ${ONNXRUNTIME_ROOT} ${CMAKE_CURRENT_BINARY_DIR} ${OpenVINO_INCLUDE_DIR} ${OPENVINO_INCLUDE_DIR_LIST} ${PYTHON_INCLUDE_DIRS} $ENV{OPENCL_INCS} $ENV{OPENCL_INCS}/../../cl_headers/)
+@@ -88,3 +89,66 @@ set_target_properties(onnxruntime_providers_openvino PROPERTIES
+   MAP_IMPORTED_CONFIG_RELEASE RelWithDebInfo
+   MAP_IMPORTED_CONFIG_DEBUG RelWithDebInfo
+   )
++
++# Install OpenVINO runtime libraries
++string(STRIP $ENV{INTEL_OPENVINO_DIR} OPENVINO_PATH_RAW)
++cmake_path(SET OPENVINO_PATH ${OPENVINO_PATH_RAW})
++
++# Map target architecture to OpenVINO architecture directory name
++if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
++  set(OPENVINO_ARCH "aarch64")
++elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$")
++  set(OPENVINO_ARCH "intel64")
++else()
++  # Default fallback - to be reevaluated
++  set(OPENVINO_ARCH "intel64")
++endif()
++
++# Set library extension based on platform
++if(WIN32)
++  set(OPENVINO_LIB_EXTENSION "dll")
++elseif(APPLE)
++  set(OPENVINO_LIB_EXTENSION "dylib")
++else()
++  set(OPENVINO_LIB_EXTENSION "so")
++endif()
++
++# Determine build configuration subdirectory
++if((CMAKE_BUILD_TYPE MATCHES "Debug")OR ("Debug" IN_LIST CMAKE_CONFIGURATION_TYPES))
++  set(OPENVINO_BUILD_CONFIG "Debug")
++else()
++  set(OPENVINO_BUILD_CONFIG "Release")
++endif()
++
++# Find OpenVINO runtime libraries (symlinks only - FOLLOW_SYMLINK_CHAIN will handle the rest)
++file(GLOB OPENVINO_RUNTIME_FILES
++  "${OPENVINO_PATH}/runtime/lib/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
++  "${OPENVINO_PATH}/runtime/lib/${OPENVINO_ARCH}/${OPENVINO_BUILD_CONFIG}/*.${OPENVINO_LIB_EXTENSION}"
++  "${OPENVINO_PATH}/runtime/bin/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
++  "${OPENVINO_PATH}/runtime/bin/${OPENVINO_ARCH}/${OPENVINO_BUILD_CONFIG}/*.${OPENVINO_LIB_EXTENSION}")
++
++# Find TBB libraries (symlinks only - FOLLOW_SYMLINK_CHAIN will handle the rest)
++file(GLOB OPENVINO_TBB_FILES
++  "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
++  "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib/*.${OPENVINO_LIB_EXTENSION}"
++  "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib64/*.${OPENVINO_LIB_EXTENSION}"
++  "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
++  "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/*.${OPENVINO_LIB_EXTENSION}")
++
++# For release builds, exclude debug files
++if(OPENVINO_BUILD_CONFIG STREQUAL "Release")
++  list(FILTER OPENVINO_RUNTIME_FILES EXCLUDE REGEX "_debug\\.${OPENVINO_LIB_EXTENSION}$")
++  list(FILTER OPENVINO_TBB_FILES EXCLUDE REGEX "_debug\\.${OPENVINO_LIB_EXTENSION}$")
++endif()
++
++# Install all found libraries
++if(OPENVINO_RUNTIME_FILES OR OPENVINO_TBB_FILES)
++  file(INSTALL
++      ${OPENVINO_RUNTIME_FILES}
++      ${OPENVINO_TBB_FILES}
++      DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
++      FOLLOW_SYMLINK_CHAIN
++  )
++else()
++  message(FATAL_ERROR "OpenVINO Debug: NO OPENVINO OR TBB RUNTIME FILES FOUND! OPENVINO_RUNTIME_FILES='${OPENVINO_RUNTIME_FILES}' OPENVINO_TBB_FILES='${OPENVINO_TBB_FILES}'")
++endif()
