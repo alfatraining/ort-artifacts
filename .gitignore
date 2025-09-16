@@ -5,3 +5,4 @@ shrimp-rules.md
 .claude/settings.local.json
 /build-*
 /openvino_toolkit_ubuntu20_2025.2.0.19140.c01cd93e24d_arm64
+/test_build
