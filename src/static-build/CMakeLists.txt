@@ -219,17 +219,28 @@ if(onnxruntime_USE_OPENVINO)
     # Find OpenVINO runtime libraries (symlinks only - FOLLOW_SYMLINK_CHAIN will handle the rest)
     file(GLOB OPENVINO_RUNTIME_FILES
         "${OPENVINO_PATH}/runtime/lib/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
+        "${OPENVINO_PATH}/runtime/lib/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}.*"
         "${OPENVINO_PATH}/runtime/lib/${OPENVINO_ARCH}/${OPENVINO_BUILD_CONFIG}/*.${OPENVINO_LIB_EXTENSION}"
+        "${OPENVINO_PATH}/runtime/lib/${OPENVINO_ARCH}/${OPENVINO_BUILD_CONFIG}/*.${OPENVINO_LIB_EXTENSION}.*"
         "${OPENVINO_PATH}/runtime/bin/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
-        "${OPENVINO_PATH}/runtime/bin/${OPENVINO_ARCH}/${OPENVINO_BUILD_CONFIG}/*.${OPENVINO_LIB_EXTENSION}")
+        "${OPENVINO_PATH}/runtime/bin/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}.*"
+        "${OPENVINO_PATH}/runtime/bin/${OPENVINO_ARCH}/${OPENVINO_BUILD_CONFIG}/*.${OPENVINO_LIB_EXTENSION}"
+        "${OPENVINO_PATH}/runtime/bin/${OPENVINO_ARCH}/${OPENVINO_BUILD_CONFIG}/*.${OPENVINO_LIB_EXTENSION}.*"
+    )
 
     # Find TBB libraries (symlinks only - FOLLOW_SYMLINK_CHAIN will handle the rest)
     file(GLOB OPENVINO_TBB_FILES
         "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
+        "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}.*"
         "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib/*.${OPENVINO_LIB_EXTENSION}"
+        "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib/*.${OPENVINO_LIB_EXTENSION}.*"
         "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib64/*.${OPENVINO_LIB_EXTENSION}"
+        "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib64/*.${OPENVINO_LIB_EXTENSION}.*"
         "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
-        "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/*.${OPENVINO_LIB_EXTENSION}")
+        "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}.*"
+        "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/*.${OPENVINO_LIB_EXTENSION}"
+        "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/*.${OPENVINO_LIB_EXTENSION}.*"
+    )
 
     # Debug: Show what TBB files were found
     # message(STATUS "OpenVINO Debug: OPENVINO_PATH='${OPENVINO_PATH}'")
@@ -259,7 +270,7 @@ if(onnxruntime_USE_OPENVINO)
             ${OPENVINO_RUNTIME_FILES}
             ${OPENVINO_TBB_FILES}
             DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
-            FOLLOW_SYMLINK_CHAIN
+            # FOLLOW_SYMLINK_CHAIN
         )
     else()
         # message(FATAL_ERROR "OpenVINO Debug: NO OPENVINO OR TBB FILES FOUND! OPENVINO_RUNTIME_FILES='${OPENVINO_RUNTIME_FILES}' OPENVINO_TBB_FILES='${OPENVINO_TBB_FILES}'")
