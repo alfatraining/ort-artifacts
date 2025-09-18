@@ -164,9 +164,39 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y patchelf
           patchelf --clear-execstack build/artifact/onnxruntime/lib/libonnxruntime_sx.so
-      - uses: actions/upload-artifact@v4
+
+      # - name: Create artifact with preserved symlinks
+      #   run: |
+      #     # Create tar archive preserving symlinks and directory structure
+      #     # cd build/artifact && tar -czhf onnxruntime.tar.gz -C build/artifact .
+      #     cd build/artifact && tar -czf onnxruntime.tar.gz -C build/artifact .
+          
+      #     # Verify symlinks are preserved (optional)
+      #     # tar -tzvf onnxruntime.tar.gz | grep '^l' || echo "No symlinks found"
+      
+      # Create archive based on target OS
+      - name: Create artifact (.zip or .tar.gz)
         if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
+        run: |
+          if [[ "${{ matrix.target }}" == *windows* ]]; then
+            powershell -Command "Compress-Archive -Path build\artifact\* -DestinationPath onnxruntime.zip"
+          else
+            tar -czf onnxruntime.tar.gz -C build/artifact .
+          fi
+        shell: bash
+
+      - name: Upload artifact
+        if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
+        uses: actions/upload-artifact@v4
         with:
           name: ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}
-          path: build/artifact
+          # path: ${{ matrix.target == 'windows-latest' && 'onnxruntime.zip' || 'onnxruntime.tar.gz' }}
+          path: ${{ contains(matrix.target, 'windows') && 'onnxruntime.zip' || 'onnxruntime.tar.gz' }}
           if-no-files-found: error
+
+      # - uses: actions/upload-artifact@v4
+      #   if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
+      #   with:
+      #     name: ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}
+      #     path: build/artifact
+      #     if-no-files-found: error
