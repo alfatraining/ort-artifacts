@@ -165,6 +165,14 @@ jobs:
           sudo apt-get install -y patchelf
           patchelf --clear-execstack build/artifact/onnxruntime/lib/libonnxruntime_sx.so
 
+      - name: fix rpath
+        if: contains(matrix.args, '--openvino') && ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && contains(matrix.target, 'linux')
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y patchelf
+          patchelf --set-rpath '$ORIGIN' build/artifact/onnxruntime/lib/libopenvino.so.2025.2.0
+
       # - name: Create artifact with preserved symlinks
       #   run: |
       #     # Create tar archive preserving symlinks and directory structure
