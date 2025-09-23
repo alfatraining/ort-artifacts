@@ -189,10 +189,15 @@ jobs:
         if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
         run: |
           if [[ "${{ matrix.target }}" == *windows* ]]; then
-            powershell -Command "Compress-Archive -Path build\artifact\* -DestinationPath onnxruntime.zip"
+            # powershell -Command "Compress-Archive -Path build\artifact\* -DestinationPath onnxruntime.zip"
+            # 7z a -tzip onnxruntime.zip build/artifact
+            pushd build/artifact
+            7z a -tzip $(dirs +1 -l)/onnxruntime.zip
+            popd
           else
             tar -czf onnxruntime.tar.gz -C build/artifact .
           fi
+        # run: tar -czf onnxruntime.tar.gz -C build/artifact .
         shell: bash
 
       - name: Upload artifact
