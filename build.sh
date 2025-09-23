@@ -11,6 +11,7 @@ fi
 # default values
 REFERENCE="main"
 STATIC_BUILD="OFF"
+BUILD_MODE="Release"
 USE_NINJA="OFF"
 TARGET_ARCH="x86_64"
 IPHONEOS="OFF"
@@ -36,6 +37,10 @@ while [[ $# -gt 0 ]]; do
 	case $1 in
 	-r | --reference)
 		REFERENCE="$2"
+		shift 2
+		;;
+	-b | --build-mode)
+		BUILD_MODE="$2"
 		shift 2
 		;;
 	-s | --static)
@@ -118,14 +123,25 @@ while [[ $# -gt 0 ]]; do
 		CLEAN_ALL="ON"
 		shift
 		;;
+	--debug)
+		BUILD_MODE="Debug"
+		shift
+		;;
+	--release)
+		BUILD_MODE="Release"
+		shift
+		;;
 	-h | --help)
 		echo "Usage: $0 [options]"
 		echo ""
 		echo "Options:"
 		echo "  -r, --reference <string>     Exact branch or tag"
 		echo "  -s, --static                 Build static library"
+		echo "  -b, --build-mode <mode>      Set build mode (Debug, Release) (default: Release)"
+		echo "      --debug                  Set debug build mode (same as: -b Debug)"
+		echo "      --release                Set release build mode (same as: -b Release)"
 		echo "  -N, --ninja                  Build with Ninja"
-		echo "  -A, --arch <arch>            Configure target architecture (x86_64, aarch64)"
+		echo "  -A, --arch <arch>            Configure target architecture (x86_64, aarch64) (default: x86_64)"
 		echo "      --iphoneos               Target iOS / iPadOS"
 		echo "      --iphonesimulator        Target iOS / iPadOS simulator"
 		echo "      --android                Target Android"
@@ -226,7 +242,11 @@ fi
 
 # configure generator arguments
 if [[ "$USE_NINJA" == "ON" ]]; then
-	GENERATOR_ARGS=("-G" "Ninja")
+	if [[ "$BUILD_MODE" == "Both" ]]; then
+		GENERATOR_ARGS=("-G" "Ninja Multi-Config")
+	else
+		GENERATOR_ARGS=("-G" "Ninja")
+	fi
 else
 	if [[ "$IS_WINDOWS" == "true" ]]; then
 		GENERATOR_ARGS=("-G" "Visual Studio 17 2022" "-A" "x64")
@@ -235,27 +255,14 @@ else
 	fi
 fi
 
-# if [[ "$IS_WINDOWS" == "true" ]]; then
-# 	if [[ "$USE_NINJA" == "ON" ]]; then
-# 		GENERATOR_ARGS=("-G" "Ninja")
-# 	else
-# 		GENERATOR_ARGS=("-G" "Visual Studio 17 2022" "-A" "x64")
-# 	fi
-# else
-# 	if [[ "$USE_NINJA" == "ON" ]]; then
-# 		GENERATOR_ARGS=("-G" "Ninja")
-# 	else
-# 		GENERATOR_ARGS=()
-# 	fi
-# fi
-
 # prepare CMake arguments
 CMAKE_ARGS=(
 	"-S" "."
 	"-B" "build"
 	"-DREFERENCE=$REFERENCE"
 	"-DSTATIC_BUILD=$STATIC_BUILD"
-	"-DUSE_NINJA=$USE_NINJA"
+	# "-DUSE_NINJA=$USE_NINJA"
+	# "-DCMAKE_BUILD_TYPE=$BUILD_MODE"
 	"-DTARGET_ARCH=$TARGET_ARCH"
 	"-DIPHONEOS=$IPHONEOS"
 	"-DIPHONESIMULATOR=$IPHONESIMULATOR"
@@ -274,6 +281,12 @@ CMAKE_ARGS=(
 	"${GENERATOR_ARGS[@]}"
 )
 
+if [[ "$BUILD_MODE" == "Both" ]]; then
+	CMAKE_ARGS+=("-DCMAKE_CONFIGURATION_TYPES=Debug,Release")
+else
+	CMAKE_ARGS+=("-DCMAKE_BUILD_TYPE=$BUILD_MODE")
+fi
+
 # assemble the final command line -  Windows/ninja builds need a VS environment
 if [[ "$IS_WINDOWS" == "true" && "$USE_NINJA" == "ON" ]]; then
 	# find default VS installer path to obtain the `vswhere.exe` path
@@ -291,14 +304,16 @@ if [[ "$IS_WINDOWS" == "true" && "$USE_NINJA" == "ON" ]]; then
 	# build command for cmd.exe execution
 	VSDEVCMD="$(cygpath -d "${VS_PATH}")/Common7/Tools/vsdevcmd.bat"
 	CMAKE_CMD="cmake ${CMAKE_ARGS[*]}"
-	BUILD_CMD="cmake --build build --config Release --parallel"
+	# BUILD_CMD="cmake --build build --config ${BUILD_MODE} --parallel"
+	BUILD_CMD="cmake --build build --parallel"
 	INSTALL_CMD="cmake --install build"
 
 	FULL_COMMAND=("$COMSPEC" "//c" "${VSDEVCMD} -no_logo -arch=amd64 -host_arch=amd64 && ${CMAKE_CMD} && ${BUILD_CMD} && ${INSTALL_CMD}")
 else
 	# it's simpler without VS environment
 	CONFIGURE_COMMAND=("cmake" "${CMAKE_ARGS[@]}")
-	BUILD_COMMAND=("cmake" "--build" "build" "--config" "Release" "--parallel")
+	# BUILD_COMMAND=("cmake" "--build" "build" "--config" "${BUILD_MODE}" "--parallel")
+	BUILD_COMMAND=("cmake" "--build" "build" "--parallel")
 	INSTALL_COMMAND=("cmake" "--install" "build")
 fi
 

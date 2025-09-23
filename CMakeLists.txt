@@ -96,8 +96,8 @@ endif()
 
 # Build CMAKE_ARGS based on options - basic flags across all targets
 set(CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE=Release
-    -DCMAKE_CONFIGURATION_TYPES=Release
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_CONFIGURATION_TYPES=${CMAKE_CONFIGURATION_TYPES}
     -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime
     -Donnxruntime_CLIENT_PACKAGE_BUILD=ON
     -Donnxruntime_USE_TELEMETRY=OFF
@@ -180,7 +180,7 @@ if(PLATFORM_WIN32)
             -DONNX_USE_MSVC_STATIC_RUNTIME=ON
             -Dprotobuf_MSVC_STATIC_RUNTIME=ON
             -Dgtest_force_shared_crt=OFF
-            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>
             -DABSL_MSVC_STATIC_RUNTIME=ON
         )
     else()
@@ -188,7 +188,7 @@ if(PLATFORM_WIN32)
             -DONNX_USE_MSVC_STATIC_RUNTIME=OFF
             -Dprotobuf_MSVC_STATIC_RUNTIME=OFF
             -Dgtest_force_shared_crt=ON
-            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>DLL
             -DABSL_MSVC_STATIC_RUNTIME=OFF
         )
     endif()
@@ -249,10 +249,10 @@ if(WASM)
         GIT_SHALLOW ON
         PATCH_COMMAND ${PATCH_COMMAND}
         CONFIGURE_COMMAND ""
-        BUILD_COMMAND bash ./build.sh --config Release --build_wasm_static_lib --enable_wasm_simd --enable_wasm_threads --skip_tests --disable_wasm_exception_catching --disable_rtti --parallel ${WEBGPU_ARG} --emsdk_version ${EMSDK_VERSION}
+        BUILD_COMMAND bash ./build.sh --config ${CMAKE_BUILD_TYPE} --build_wasm_static_lib --enable_wasm_simd --enable_wasm_threads --skip_tests --disable_wasm_exception_catching --disable_rtti --parallel ${WEBGPU_ARG} --emsdk_version ${EMSDK_VERSION}
         BUILD_IN_SOURCE ON
         INSTALL_COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime/lib
-                     && ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/build/Linux/Release/libonnxruntime_webassembly.a ${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime/lib/libonnxruntime.a
+                     && ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/build/Linux/${CMAKE_BUILD_TYPE}/libonnxruntime_webassembly.a ${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime/lib/libonnxruntime.a
         INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime
     )
 else()

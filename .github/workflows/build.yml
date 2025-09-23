@@ -36,6 +36,14 @@ on:
         type: string
         description: "Custom target filter (overrides preset if specified, supports substring matching)"
         required: false
+      buildtype:
+          type: choice
+          required: true
+          default: 'Release'
+          options:
+            - 'Release'
+            - 'Debug'
+            - 'Both'
 
 env:
   # GCC_VERSION: '14.3'
@@ -115,13 +123,13 @@ jobs:
         run: |
           # Install basic build tools
           sudo apt update && sudo apt install -y make ninja-build wget xz-utils
-          
+
           # Download and install ARM GNU Toolchain with GCC 14.3
           wget -q https://developer.arm.com/-/media/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
           sudo mkdir -p /opt/linaro-toolchain
           sudo tar -xf arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz -C /opt/linaro-toolchain --strip-components=1
           rm arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
-          
+
           # Add toolchain to PATH and create symlinks for compatibility
           echo "/opt/linaro-toolchain/bin" >> $GITHUB_PATH
           sudo ln -sf /opt/linaro-toolchain/bin/aarch64-none-linux-gnu-gcc /usr/bin/aarch64-none-linux-gnu-gcc
@@ -147,16 +155,19 @@ jobs:
           version: "2025.2"
           arch: ${{ contains(matrix.target, 'aarch64') && 'arm64' || 'x86_64' }}
           release: ${{ contains(matrix.target, 'linux') && (contains(matrix.target, 'aarch64') && 'ubuntu20' || 'ubuntu24') || '' }}
-      - name: Run builder
-        if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
+
+      - name: Run single config build
+        if: >
+          (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) ||
+          (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           CMAKE_SYSROOT: ${{ (matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux') && '/opt/linaro-toolchain/aarch64-none-linux-gnu/libc' || '' }}
           CMAKE_FIND_ROOT_PATH: ${{ (matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux') && '/opt/linaro-toolchain/aarch64-none-linux-gnu' || '' }}
         shell: bash
         run: |
-          ./build.sh -r "${{ inputs.onnxruntime-ref }}" ${{ matrix.args }}
-      
+          ./build.sh -r "${{ inputs.onnxruntime-ref }}" -b "${{ inputs.buildtype }}" ${{ matrix.args }}
+
       # See: https://github.com/microsoft/onnxruntime/issues/24911
       - name: Remove executable stack flag
         if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-x86_64-linux' || matrix.target == 'dylib-aarch64-linux' || matrix.target == 'dylib-aarch64-android')
@@ -173,15 +184,6 @@ jobs:
           sudo apt-get install -y patchelf
           patchelf --set-rpath '$ORIGIN' build/artifact/onnxruntime/lib/libopenvino.so.2025.2.0
 
-      # - name: Create artifact with preserved symlinks
-      #   run: |
-      #     # Create tar archive preserving symlinks and directory structure
-      #     # cd build/artifact && tar -czhf onnxruntime.tar.gz -C build/artifact .
-      #     cd build/artifact && tar -czf onnxruntime.tar.gz -C build/artifact .
-          
-      #     # Verify symlinks are preserved (optional)
-      #     # tar -tzvf onnxruntime.tar.gz | grep '^l' || echo "No symlinks found"
-      
       # Create archive based on target OS
       - name: Create artifact (.zip or .tar.gz)
         if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
@@ -201,10 +203,3 @@ jobs:
           # path: ${{ matrix.target == 'windows-latest' && 'onnxruntime.zip' || 'onnxruntime.tar.gz' }}
           path: ${{ contains(matrix.target, 'windows') && 'onnxruntime.zip' || 'onnxruntime.tar.gz' }}
           if-no-files-found: error
-
-      # - uses: actions/upload-artifact@v4
-      #   if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
-      #   with:
-      #     name: ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}
-      #     path: build/artifact
-      #     if-no-files-found: error
