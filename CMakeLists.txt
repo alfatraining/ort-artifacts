@@ -97,7 +97,7 @@ else()
 endif()
 
 # Build CMAKE_ARGS based on options - basic flags across all targets
-string(REPLACE ";" "|" BUILD_CONFIGS "${CMAKE_CONFIGURATION_TYPES}")
+string(REPLACE ";" "<|>" BUILD_CONFIGS "${CMAKE_CONFIGURATION_TYPES}")
 set(CMAKE_ARGS
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
     -DCMAKE_CONFIGURATION_TYPES=${BUILD_CONFIGS}
@@ -266,7 +266,7 @@ else()
         GIT_SHALLOW ON
         PATCH_COMMAND ${PATCH_COMMAND} ${STATIC_BUILD_COMMAND}
         SOURCE_SUBDIR ${SOURCE_SUBDIR}
-        LIST_SEPARATOR "|"
+        LIST_SEPARATOR "<|>"
         CMAKE_ARGS ${CMAKE_ARGS}
         # ${ORT_CMAKE_GENERATOR}
         INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime
