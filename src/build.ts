@@ -89,6 +89,7 @@ await new Command()
 		args.push('-Donnxruntime_BUILD_UNIT_TESTS=OFF');
 		args.push('-Donnxruntime_USE_KLEIDIAI=ON');
 		args.push('-Donnxruntime_ENABLE_PYTHON=OFF');
+		args.push('-DCMAKE_POLICY_VERSION_MINIMUM=3.5');
 
 		// Minimal build.
 		args.push('-Donnxruntime_MINIMAL_BUILD=ON');
