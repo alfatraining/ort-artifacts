@@ -5,6 +5,8 @@ include(ExternalProject)
 
 # Cache variables with defaults matching
 
+# message(FATAL_ERROR "USING GENERATOR: ${CMAKE_GENERATOR} for ${CMAKE_CONFIGURATION_TYPES}")
+
 # Core options
 set(REFERENCE "main" CACHE STRING "Exact branch or tag")
 option(STATIC_BUILD "Build static library" OFF)
@@ -95,9 +97,10 @@ else()
 endif()
 
 # Build CMAKE_ARGS based on options - basic flags across all targets
+string(REPLACE ";" "|" BUILD_CONFIGS "${CMAKE_CONFIGURATION_TYPES}")
 set(CMAKE_ARGS
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-    -DCMAKE_CONFIGURATION_TYPES=${CMAKE_CONFIGURATION_TYPES}
+    -DCMAKE_CONFIGURATION_TYPES=${BUILD_CONFIGS}
     -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime
     -Donnxruntime_CLIENT_PACKAGE_BUILD=ON
     -Donnxruntime_USE_TELEMETRY=OFF
@@ -263,6 +266,7 @@ else()
         GIT_SHALLOW ON
         PATCH_COMMAND ${PATCH_COMMAND} ${STATIC_BUILD_COMMAND}
         SOURCE_SUBDIR ${SOURCE_SUBDIR}
+        LIST_SEPARATOR "|"
         CMAKE_ARGS ${CMAKE_ARGS}
         # ${ORT_CMAKE_GENERATOR}
         INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime
