@@ -282,7 +282,7 @@ CMAKE_ARGS=(
 )
 
 if [[ "$BUILD_MODE" == "Both" ]]; then
-	CMAKE_ARGS+=("-DCMAKE_CONFIGURATION_TYPES=Debug,Release")
+	CMAKE_ARGS+=("-DCMAKE_CONFIGURATION_TYPES=Release;Debug")
 else
 	CMAKE_ARGS+=("-DCMAKE_BUILD_TYPE=$BUILD_MODE")
 fi
@@ -304,17 +304,31 @@ if [[ "$IS_WINDOWS" == "true" && "$USE_NINJA" == "ON" ]]; then
 	# build command for cmd.exe execution
 	VSDEVCMD="$(cygpath -d "${VS_PATH}")/Common7/Tools/vsdevcmd.bat"
 	CMAKE_CMD="cmake ${CMAKE_ARGS[*]}"
-	# BUILD_CMD="cmake --build build --config ${BUILD_MODE} --parallel"
-	BUILD_CMD="cmake --build build --parallel"
-	INSTALL_CMD="cmake --install build"
+
+	if [[ "$BUILD_MODE" == "Both" ]]; then
+		BUILD_CMD="cmake --build build --config Debug --parallel && cmake --build build --config Release --parallel"
+		INSTALL_CMD="cmake --install build --config Debug && cmake --install build --config Release"
+	else
+		BUILD_CMD="cmake --build build --config ${BUILD_MODE} --parallel"
+		INSTALL_CMD="cmake --install build"
+	fi
 
 	FULL_COMMAND=("$COMSPEC" "//c" "${VSDEVCMD} -no_logo -arch=amd64 -host_arch=amd64 && ${CMAKE_CMD} && ${BUILD_CMD} && ${INSTALL_CMD}")
+	echo "$COMSPEC" "//c" "${VSDEVCMD} -no_logo -arch=amd64 -host_arch=amd64 && ${CMAKE_CMD} && ${BUILD_CMD} && ${INSTALL_CMD}"
 else
 	# it's simpler without VS environment
 	CONFIGURE_COMMAND=("cmake" "${CMAKE_ARGS[@]}")
+
+	if [[ "$BUILD_MODE" == "Both" ]]; then
+		BUILD_CMD="cmake --build build --config Debug --parallel && cmake --build build --config Release --parallel"
+		INSTALL_CMD="cmake --install build --config Debug && cmake --install build --config Release"
+	else
+		BUILD_CMD="cmake --build build --config ${BUILD_MODE} --parallel"
+		INSTALL_CMD="cmake --install build"
+	fi
+
 	# BUILD_COMMAND=("cmake" "--build" "build" "--config" "${BUILD_MODE}" "--parallel")
-	BUILD_COMMAND=("cmake" "--build" "build" "--parallel")
-	INSTALL_COMMAND=("cmake" "--install" "build")
+	# INSTALL_COMMAND=("cmake" "--install" "build")
 fi
 
 if [[ "$DRY_RUN" == "ON" ]]; then
@@ -322,6 +336,7 @@ if [[ "$DRY_RUN" == "ON" ]]; then
 	echo ""
 
 	if [[ "$IS_WINDOWS" == "true" && "$USE_NINJA" == "ON" ]]; then
+		echo aaa
 		echo -e "${CYAN}${FULL_COMMAND[*]}${NC}"
 	else
 		echo -e "${CYAN}${CONFIGURE_COMMAND[*]}${NC}"
