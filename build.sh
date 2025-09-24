@@ -243,7 +243,9 @@ fi
 # configure generator arguments
 if [[ "$USE_NINJA" == "ON" ]]; then
 	if [[ "$BUILD_MODE" == "Both" ]]; then
-		GENERATOR_ARGS=("-G" "Ninja Multi-Config")
+		# GENERATOR_ARGS=("-G" "Ninja Multi-Config")
+		GENERATOR_ARGS=()
+		export CMAKE_GENERATOR="Ninja Multi-Config"
 	else
 		GENERATOR_ARGS=("-G" "Ninja")
 	fi
@@ -336,7 +338,6 @@ if [[ "$DRY_RUN" == "ON" ]]; then
 	echo ""
 
 	if [[ "$IS_WINDOWS" == "true" && "$USE_NINJA" == "ON" ]]; then
-		echo aaa
 		echo -e "${CYAN}${FULL_COMMAND[*]}${NC}"
 	else
 		echo -e "${CYAN}${CONFIGURE_COMMAND[*]}${NC}"
