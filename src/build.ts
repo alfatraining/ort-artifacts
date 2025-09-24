@@ -87,7 +87,6 @@ await new Command()
 		args.push('-Donnxruntime_CLIENT_PACKAGE_BUILD=ON');
 		args.push('-Donnxruntime_USE_TELEMETRY=OFF');
 		args.push('-Donnxruntime_BUILD_UNIT_TESTS=OFF');
-		args.push('-Donnxruntime_USE_KLEIDIAI=ON');
 		args.push('-Donnxruntime_ENABLE_PYTHON=OFF');
 		args.push('-DCMAKE_POLICY_VERSION_MINIMUM=3.5');
 
@@ -194,6 +193,10 @@ await new Command()
 			args.push(`-Dgtest_force_shared_crt=${options.mt ? 'OFF' : 'ON'}`);
 			args.push(`-DCMAKE_MSVC_RUNTIME_LIBRARY=${options.mt ? 'MultiThreaded' : 'MultiThreadedDLL'}`);
 			args.push(`-DABSL_MSVC_STATIC_RUNTIME=${options.mt ? 'ON' : 'OFF'}`);
+		}
+
+		if (arch === 'arm64') {
+			args.push('-Donnxruntime_USE_KLEIDIAI=ON');
 		}
 
 		if (!options.static) {
