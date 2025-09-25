@@ -77,7 +77,7 @@ function(bundle_static_library bundled_target_name)
     endforeach()
 
     file(GENERATE
-        OUTPUT static_libs.txt
+        OUTPUT static_libs$<$<CONFIG:Debug>:_debug>.txt
         INPUT ${CMAKE_CURRENT_BINARY_DIR}/static_libs.txt.in)
 
     # Generate debug-aware filename with postfix
