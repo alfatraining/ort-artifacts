@@ -43,7 +43,7 @@ on:
           options:
             - 'Release'
             - 'Debug'
-            - 'Both'
+            # - 'Both'
 
 env:
   # GCC_VERSION: '14.3'
@@ -174,7 +174,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y patchelf
-          patchelf --clear-execstack build/artifact/onnxruntime/lib/libonnxruntime_sx.so
+          patchelf --clear-execstack build/artifact/onnxruntime/lib/libonnxruntime_sx${{ (inputs.buildtype == 'Debug') && 'd' || '' }}.so
 
       - name: fix rpath
         if: contains(matrix.args, '--openvino') && ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && contains(matrix.target, 'linux')

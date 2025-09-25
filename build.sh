@@ -322,11 +322,11 @@ else
 	CONFIGURE_COMMAND=("cmake" "${CMAKE_ARGS[@]}")
 
 	if [[ "$BUILD_MODE" == "Both" ]]; then
-		BUILD_CMD="cmake --build build --config Debug --parallel && cmake --build build --config Release --parallel"
-		INSTALL_CMD="cmake --install build --config Debug && cmake --install build --config Release"
+		BUILD_COMMAND=("cmake --build build --config Debug --parallel && cmake --build build --config Release --parallel")
+		INSTALL_COMMAND=("cmake --install build --config Debug && cmake --install build --config Release")
 	else
-		BUILD_CMD="cmake --build build --config ${BUILD_MODE} --parallel"
-		INSTALL_CMD="cmake --install build"
+		BUILD_COMMAND=("cmake --build build --config ${BUILD_MODE} --parallel")
+		INSTALL_COMMAND=("cmake --install build")
 	fi
 
 	# BUILD_COMMAND=("cmake" "--build" "build" "--config" "${BUILD_MODE}" "--parallel")

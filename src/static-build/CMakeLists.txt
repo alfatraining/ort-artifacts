@@ -216,7 +216,7 @@ if(onnxruntime_USE_OPENVINO)
     endif()
 
     # Determine build configuration subdirectory
-    if((CMAKE_BUILD_TYPE MATCHES "Debug")OR ("Debug" IN_LIST CMAKE_CONFIGURATION_TYPES))
+    if((CMAKE_BUILD_TYPE MATCHES "Debug") OR ("Debug" IN_LIST CMAKE_CONFIGURATION_TYPES))
         set(OPENVINO_BUILD_CONFIG "Debug")
     else()
         set(OPENVINO_BUILD_CONFIG "Release")
