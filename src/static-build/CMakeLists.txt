@@ -80,8 +80,9 @@ function(bundle_static_library bundled_target_name)
         OUTPUT static_libs.txt
         INPUT ${CMAKE_CURRENT_BINARY_DIR}/static_libs.txt.in)
 
+    # Generate debug-aware filename with postfix
     set(bundled_target_full_name
-        ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}${bundled_target_name}${CMAKE_STATIC_LIBRARY_SUFFIX})
+        ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}${bundled_target_name}$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>${CMAKE_STATIC_LIBRARY_SUFFIX})
 
     if(MSVC)
         set(lib ${CMAKE_AR})
@@ -137,7 +138,8 @@ function(bundle_static_library bundled_target_name)
     add_library(${bundled_target_name} STATIC IMPORTED GLOBAL)
     set_target_properties(${bundled_target_name}
         PROPERTIES
-        IMPORTED_LOCATION ${bundled_target_full_name})
+        IMPORTED_LOCATION ${bundled_target_full_name}
+        DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
 
     foreach(target_name IN ITEMS ${ARGN})
         set_property(TARGET ${bundled_target_name} APPEND
@@ -180,7 +182,11 @@ if(onnxruntime_USE_WEBGPU)
     endif()
 endif()
 if(onnxruntime_USE_DML)
-    install(FILES "$<TARGET_FILE_DIR:onnxruntime_providers_dml>/DirectML.dll" TYPE LIB)
+    install(
+        FILES
+            "$<TARGET_FILE_DIR:onnxruntime_providers_dml>/DirectML$<$<CONFIG:Debug>:.Debug>.dll"
+            "$<TARGET_FILE_DIR:onnxruntime_providers_dml>/DirectML$<$<CONFIG:Debug>:.Debug>.pdb"
+        TYPE LIB)
 endif()
 if(onnxruntime_USE_OPENVINO)
     add_dependencies(onnxruntime onnxruntime_providers_openvino)
@@ -264,7 +270,7 @@ if(onnxruntime_USE_OPENVINO)
 endif()
 
 install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}${PROJECT_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX}
-    RENAME ${CMAKE_STATIC_LIBRARY_PREFIX}onnxruntime${CMAKE_STATIC_LIBRARY_SUFFIX}
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}${PROJECT_NAME}$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>${CMAKE_STATIC_LIBRARY_SUFFIX}
+    RENAME ${CMAKE_STATIC_LIBRARY_PREFIX}onnxruntime$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>${CMAKE_STATIC_LIBRARY_SUFFIX}
     TYPE LIB
 )
