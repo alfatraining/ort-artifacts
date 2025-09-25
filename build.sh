@@ -242,13 +242,7 @@ fi
 
 # configure generator arguments
 if [[ "$USE_NINJA" == "ON" ]]; then
-	if [[ "$BUILD_MODE" == "Both" ]]; then
-		# GENERATOR_ARGS=("-G" "Ninja Multi-Config")
-		GENERATOR_ARGS=()
-		export CMAKE_GENERATOR="Ninja Multi-Config"
-	else
-		GENERATOR_ARGS=("-G" "Ninja")
-	fi
+	GENERATOR_ARGS=("-G" "Ninja")
 else
 	if [[ "$IS_WINDOWS" == "true" ]]; then
 		GENERATOR_ARGS=("-G" "Visual Studio 17 2022" "-A" "x64")
@@ -264,7 +258,7 @@ CMAKE_ARGS=(
 	"-DREFERENCE=$REFERENCE"
 	"-DSTATIC_BUILD=$STATIC_BUILD"
 	# "-DUSE_NINJA=$USE_NINJA"
-	# "-DCMAKE_BUILD_TYPE=$BUILD_MODE"
+	"-DCMAKE_BUILD_TYPE=$BUILD_MODE"
 	"-DTARGET_ARCH=$TARGET_ARCH"
 	"-DIPHONEOS=$IPHONEOS"
 	"-DIPHONESIMULATOR=$IPHONESIMULATOR"
@@ -282,12 +276,6 @@ CMAKE_ARGS=(
 	"-DUSE_NNAPI=$USE_NNAPI"
 	"${GENERATOR_ARGS[@]}"
 )
-
-if [[ "$BUILD_MODE" == "Both" ]]; then
-	CMAKE_ARGS+=("-DCMAKE_CONFIGURATION_TYPES=Release;Debug")
-else
-	CMAKE_ARGS+=("-DCMAKE_BUILD_TYPE=$BUILD_MODE")
-fi
 
 # assemble the final command line -  Windows/ninja builds need a VS environment
 if [[ "$IS_WINDOWS" == "true" && "$USE_NINJA" == "ON" ]]; then
@@ -307,13 +295,8 @@ if [[ "$IS_WINDOWS" == "true" && "$USE_NINJA" == "ON" ]]; then
 	VSDEVCMD="$(cygpath -d "${VS_PATH}")/Common7/Tools/vsdevcmd.bat"
 	CMAKE_CMD="cmake ${CMAKE_ARGS[*]}"
 
-	if [[ "$BUILD_MODE" == "Both" ]]; then
-		BUILD_CMD="cmake --build build --config Debug --parallel && cmake --build build --config Release --parallel"
-		INSTALL_CMD="cmake --install build --config Debug && cmake --install build --config Release"
-	else
-		BUILD_CMD="cmake --build build --config ${BUILD_MODE} --parallel"
-		INSTALL_CMD="cmake --install build"
-	fi
+	BUILD_CMD="cmake --build build --parallel"
+	INSTALL_CMD="cmake --install build"
 
 	FULL_COMMAND=("$COMSPEC" "//c" "${VSDEVCMD} -no_logo -arch=amd64 -host_arch=amd64 && ${CMAKE_CMD} && ${BUILD_CMD} && ${INSTALL_CMD}")
 	echo "$COMSPEC" "//c" "${VSDEVCMD} -no_logo -arch=amd64 -host_arch=amd64 && ${CMAKE_CMD} && ${BUILD_CMD} && ${INSTALL_CMD}"
@@ -321,16 +304,8 @@ else
 	# it's simpler without VS environment
 	CONFIGURE_COMMAND=("cmake" "${CMAKE_ARGS[@]}")
 
-	if [[ "$BUILD_MODE" == "Both" ]]; then
-		BUILD_COMMAND=("cmake --build build --config Debug --parallel && cmake --build build --config Release --parallel")
-		INSTALL_COMMAND=("cmake --install build --config Debug && cmake --install build --config Release")
-	else
-		BUILD_COMMAND=("cmake --build build --config ${BUILD_MODE} --parallel")
-		INSTALL_COMMAND=("cmake --install build")
-	fi
-
-	# BUILD_COMMAND=("cmake" "--build" "build" "--config" "${BUILD_MODE}" "--parallel")
-	# INSTALL_COMMAND=("cmake" "--install" "build")
+	BUILD_COMMAND=("cmake" "--build" "build" "--parallel")
+	INSTALL_COMMAND=("cmake" "--install" "build")
 fi
 
 if [[ "$DRY_RUN" == "ON" ]]; then
