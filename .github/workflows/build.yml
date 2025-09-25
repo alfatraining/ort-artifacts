@@ -43,7 +43,6 @@ on:
           options:
             - 'Release'
             - 'Debug'
-            # - 'Both'
 
 env:
   # GCC_VERSION: '14.3'
@@ -204,7 +203,7 @@ jobs:
         if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
         uses: actions/upload-artifact@v4
         with:
-          name: ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}
+          name: ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ inputs.buildtype }}
           # path: ${{ matrix.target == 'windows-latest' && 'onnxruntime.zip' || 'onnxruntime.tar.gz' }}
           path: ${{ contains(matrix.target, 'windows') && 'onnxruntime.zip' || 'onnxruntime.tar.gz' }}
           if-no-files-found: error
