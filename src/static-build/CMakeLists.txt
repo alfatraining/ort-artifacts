@@ -186,7 +186,7 @@ if(onnxruntime_USE_DML)
         FILES
             "$<TARGET_FILE_DIR:onnxruntime_providers_dml>/DirectML$<$<CONFIG:Debug>:.Debug>.dll"
             "$<TARGET_FILE_DIR:onnxruntime_providers_dml>/DirectML$<$<CONFIG:Debug>:.Debug>.pdb"
-        TYPE LIB)
+        TYPE BIN)
 endif()
 if(onnxruntime_USE_OPENVINO)
     add_dependencies(onnxruntime onnxruntime_providers_openvino)
@@ -222,7 +222,7 @@ if(onnxruntime_USE_OPENVINO)
         set(OPENVINO_BUILD_CONFIG "Release")
     endif()
 
-    # Find OpenVINO runtime libraries (symlinks only - FOLLOW_SYMLINK_CHAIN will handle the rest)
+    # Find OpenVINO runtime libraries
     file(GLOB OPENVINO_RUNTIME_FILES
         "${OPENVINO_PATH}/runtime/lib/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
         "${OPENVINO_PATH}/runtime/lib/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}.*"
@@ -234,7 +234,7 @@ if(onnxruntime_USE_OPENVINO)
         "${OPENVINO_PATH}/runtime/bin/${OPENVINO_ARCH}/${OPENVINO_BUILD_CONFIG}/*.${OPENVINO_LIB_EXTENSION}.*"
     )
 
-    # Find TBB libraries (symlinks only - FOLLOW_SYMLINK_CHAIN will handle the rest)
+    # Find TBB libraries
     file(GLOB OPENVINO_TBB_FILES
         "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}"
         "${OPENVINO_PATH}/runtime/3rdparty/tbb/lib/${OPENVINO_ARCH}/*.${OPENVINO_LIB_EXTENSION}.*"
@@ -259,10 +259,15 @@ if(onnxruntime_USE_OPENVINO)
 
     # Install all found libraries
     if(OPENVINO_RUNTIME_FILES OR OPENVINO_TBB_FILES)
+        if(WIN32)
+            set(DESTDIR ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})
+        else()
+            set(DESTDIR ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+        endif()
         file(INSTALL
             ${OPENVINO_RUNTIME_FILES}
             ${OPENVINO_TBB_FILES}
-            DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
+            DESTINATION ${DESTDIR}
         )
     else()
         message(FATAL_ERROR "OpenVINO Debug: NO OPENVINO OR TBB FILES FOUND! OPENVINO_RUNTIME_FILES='${OPENVINO_RUNTIME_FILES}' OPENVINO_TBB_FILES='${OPENVINO_TBB_FILES}'")
