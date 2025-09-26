@@ -13,7 +13,7 @@ index c8cf0b21a9..445516662e 100644
 +      ${DML_PACKAGE_DIR}/bin/${onnxruntime_target_platform}-win/DirectML.Debug.dll
 +      ${DML_PACKAGE_DIR}/bin/${onnxruntime_target_platform}-win/DirectML.Debug.pdb
 +    DESTINATION
-+      ${CMAKE_INSTALL_LIBDIR}/
++      ${CMAKE_INSTALL_BINDIR}/
 +  )
 +
    set_target_properties(onnxruntime_providers_dml PROPERTIES LINKER_LANGUAGE CXX)
