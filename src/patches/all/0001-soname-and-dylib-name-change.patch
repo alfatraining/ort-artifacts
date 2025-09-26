@@ -1,0 +1,24 @@
+diff --git a/cmake/onnxruntime.cmake b/cmake/onnxruntime.cmake
+index 6c1d4485e..67c94668d 100644
+--- a/cmake/onnxruntime.cmake
++++ b/cmake/onnxruntime.cmake
+@@ -140,7 +140,8 @@ endif()
+ target_include_directories(onnxruntime PRIVATE ${ONNXRUNTIME_ROOT} PUBLIC "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/onnxruntime>")
+ 
+ 
+-target_compile_definitions(onnxruntime PRIVATE FILE_NAME=\"onnxruntime.dll\")
++target_compile_definitions(onnxruntime PRIVATE FILE_NAME=\"onnxruntime_sx$<$<CONFIG:Debug>:Debug>.dll\")
++set_target_properties(onnxruntime PROPERTIES OUTPUT_NAME "onnxruntime_sx")
+ 
+ if(UNIX)
+   if (APPLE)
+@@ -273,7 +274,8 @@ if(NOT APPLE AND NOT WIN32)
+       LINK_DEPENDS ${SYMBOL_FILE}
+       VERSION ${ORT_VERSION}
+       SOVERSION 1
+-      FOLDER "ONNXRuntime")
++      FOLDER "ONNXRuntime"
++      NO_SONAME 1) # AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+   endif()
+ else()
+   # Omit the SOVERSION setting in Windows/macOS/iOS/.. build

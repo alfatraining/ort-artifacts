@@ -1,8 +1,8 @@
 diff --git a/cmake/onnxruntime_providers_openvino.cmake b/cmake/onnxruntime_providers_openvino.cmake
-index 5a831a106..f641a605c 100644
+index 03f67983c..7f1d622d0 100644
 --- a/cmake/onnxruntime_providers_openvino.cmake
 +++ b/cmake/onnxruntime_providers_openvino.cmake
-@@ -46,6 +46,7 @@
+@@ -51,12 +51,13 @@
  
    if(NOT MSVC)
      target_compile_options(onnxruntime_providers_openvino PRIVATE "-Wno-parentheses")
@@ -10,7 +10,14 @@ index 5a831a106..f641a605c 100644
    endif()
    add_dependencies(onnxruntime_providers_openvino onnxruntime_providers_shared ${onnxruntime_EXTERNAL_DEPENDENCIES})
    target_include_directories(onnxruntime_providers_openvino SYSTEM PUBLIC ${ONNXRUNTIME_ROOT} ${CMAKE_CURRENT_BINARY_DIR} ${OpenVINO_INCLUDE_DIR} ${OPENVINO_INCLUDE_DIR_LIST} ${PYTHON_INCLUDE_DIRS} $ENV{OPENCL_INCS} $ENV{OPENCL_INCS}/../../cl_headers/)
-@@ -88,3 +89,86 @@ set_target_properties(onnxruntime_providers_openvino PROPERTIES
+   target_link_libraries(onnxruntime_providers_openvino ${ONNXRUNTIME_PROVIDERS_SHARED} Boost::mp11 ${OPENVINO_LIB_LIST} ${ABSEIL_LIBS} Eigen3::Eigen)
+ 
+-  target_compile_definitions(onnxruntime_providers_openvino PRIVATE FILE_NAME=\"onnxruntime_providers_openvino.dll\")
++  target_compile_definitions(onnxruntime_providers_openvino PRIVATE FILE_NAME=\"onnxruntime_providers_openvino$<$<CONFIG:Debug>:Debug>.dll\")
+ 
+   if(MSVC)
+     target_compile_options(onnxruntime_providers_openvino PRIVATE /wd4099 /wd4275 /wd4100 /wd4005)
+@@ -93,3 +94,86 @@ set_target_properties(onnxruntime_providers_openvino PROPERTIES
    MAP_IMPORTED_CONFIG_RELEASE RelWithDebInfo
    MAP_IMPORTED_CONFIG_DEBUG RelWithDebInfo
    )
