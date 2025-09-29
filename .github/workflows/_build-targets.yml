@@ -1,0 +1,182 @@
+name: Build Targets
+
+on:
+  workflow_call:
+    inputs:
+      onnxruntime-ref:
+        type: string
+        description: "ONNX Runtime repository reference"
+        required: true
+      buildtype:
+        type: string
+        description: "Build type (Debug or Release)"
+        required: true
+      target-preset:
+        type: string
+        description: "Target preset"
+        required: true
+      target-custom:
+        type: string
+        description: "Custom target filter"
+        required: false
+
+env:
+  GCC_VERSION: '11'
+  CMAKE_VERSION: '3.28'
+  PYTHON_VERSION: '3.10'
+  XCODE_VERSION: '14.3.1'
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }} (${{ inputs.buildtype }})
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: dylib-aarch64-linux
+            args: "-A aarch64 --xnnpack -N --openvino"
+            runs-on: ubuntu-24.04
+          - target: static-aarch64-linux
+            args: "--static -A aarch64 --xnnpack -N --openvino"
+            runs-on: ubuntu-24.04
+          - target: dylib-x86_64-linux
+            args: "--xnnpack -N --openvino"
+            runs-on: ubuntu-24.04
+          - target: static-x86_64-linux
+            args: "--static --xnnpack -N --openvino"
+            runs-on: ubuntu-24.04
+          - target: dylib-aarch64-macos
+            args: "-A aarch64 --xnnpack -N"
+            runs-on: macos-13
+          - target: static-aarch64-macos
+            args: "--static -A aarch64 --xnnpack -N"
+            runs-on: macos-13
+          - target: dylib-x86_64-macos
+            args: "--xnnpack -N"
+            runs-on: macos-13
+          - target: static-x86_64-macos
+            args: "--static --xnnpack -N"
+            runs-on: macos-13
+          - target: dylib-x86_64-windows-msvc-md
+            args: "--directml --xnnpack --openvino -N"
+            runs-on: windows-2025
+          - target: static-x86_64-windows-msvc-md
+            args: "--static --directml --xnnpack --openvino -N"
+            runs-on: windows-2025
+          - target: dylib-x86_64-windows-msvc-mt
+            args: "--mt --directml --xnnpack --openvino -N"
+            runs-on: windows-2025
+          - target: static-x86_64-windows-msvc-mt
+            args: "--static --mt --directml --xnnpack --openvino -N"
+            runs-on: windows-2025
+          - target: wasm32-emscripten
+            args: "-W --webgpu"
+            runs-on: ubuntu-24.04
+          - target: dylib-aarch64-ios
+            args: "-A aarch64 --iphoneos --xnnpack --coreml -N"
+            runs-on: macos-13
+          - target: static-aarch64-ios
+            args: "--static --iphoneos -A aarch64 --xnnpack --coreml -N"
+            runs-on: macos-13
+          - target: dylib-aarch64-ios-simulator
+            args: "-A aarch64 --iphonesimulator --xnnpack --coreml -N"
+            runs-on: macos-13
+          - target: static-aarch64-ios-simulator
+            args: "--static --iphonesimulator -A aarch64 --xnnpack --coreml -N"
+            runs-on: macos-13
+          - target: dylib-aarch64-android
+            args: "--android -A aarch64 --xnnpack --nnapi -N"
+            runs-on: ubuntu-24.04
+          - target: static-aarch64-android
+            args: "--static --android -A aarch64 --xnnpack --nnapi -N"
+            runs-on: ubuntu-24.04
+    steps:
+      - name: Install cross-compile tools
+        if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux')
+        run: |
+          # Install basic build tools
+          sudo apt update && sudo apt install -y make ninja-build wget xz-utils
+
+          # Download and install ARM GNU Toolchain with GCC 14.3
+          wget -q https://developer.arm.com/-/media/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
+          sudo mkdir -p /opt/linaro-toolchain
+          sudo tar -xf arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz -C /opt/linaro-toolchain --strip-components=1
+          rm arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
+
+          # Add toolchain to PATH and create symlinks for compatibility
+          echo "/opt/linaro-toolchain/bin" >> $GITHUB_PATH
+          sudo ln -sf /opt/linaro-toolchain/bin/aarch64-none-linux-gnu-gcc /usr/bin/aarch64-none-linux-gnu-gcc
+          sudo ln -sf /opt/linaro-toolchain/bin/aarch64-none-linux-gnu-g++ /usr/bin/aarch64-none-linux-gnu-g++
+      - uses: actions/checkout@v4
+        if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
+      - uses: actions/setup-java@v4
+        if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android')
+        with:
+          java-version: "17"
+          distribution: "temurin"
+      - uses: android-actions/setup-android@v3
+        if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android')
+      - uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-aarch64-android' || matrix.target == 'static-aarch64-android')
+        with:
+          add-to-path: false
+          ndk-version: r28
+      - uses: JW-AV/install-openvino-action@v10.1
+        if: contains(matrix.args, '--openvino') && ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset))))
+        with:
+          version: "2025.2"
+          arch: ${{ contains(matrix.target, 'aarch64') && 'arm64' || 'x86_64' }}
+          release: ${{ contains(matrix.target, 'linux') && (contains(matrix.target, 'aarch64') && 'ubuntu20' || 'ubuntu24') || '' }}
+
+      - name: Run build
+        if: >
+          (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) ||
+          (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          CMAKE_SYSROOT: ${{ (matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux') && '/opt/linaro-toolchain/aarch64-none-linux-gnu/libc' || '' }}
+          CMAKE_FIND_ROOT_PATH: ${{ (matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux') && '/opt/linaro-toolchain/aarch64-none-linux-gnu' || '' }}
+        shell: bash
+        run: |
+          ./build.sh -r "${{ inputs.onnxruntime-ref }}" -b "${{ inputs.buildtype }}" ${{ matrix.args }}
+
+      # See: https://github.com/microsoft/onnxruntime/issues/24911
+      - name: Remove executable stack flag
+        if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-x86_64-linux' || matrix.target == 'dylib-aarch64-linux' || matrix.target == 'dylib-aarch64-android')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y patchelf
+          patchelf --clear-execstack build/artifact/onnxruntime/lib/libonnxruntime_sx${{ (inputs.buildtype == 'Debug') && 'd' || '' }}.so
+
+      - name: fix rpath
+        if: contains(matrix.args, '--openvino') && ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && contains(matrix.target, 'linux')
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y patchelf
+          patchelf --set-rpath '$ORIGIN' build/artifact/onnxruntime/lib/libopenvino.so.2025.2.0
+
+      # Create archive based on target OS
+      - name: Create artifact (.zip or .tar.gz)
+        if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
+        run: |
+          if [[ "${{ matrix.target }}" == *windows* ]]; then
+            # powershell -Command "Compress-Archive -Path build\\artifact\\* -DestinationPath onnxruntime.zip"
+            # 7z a -tzip onnxruntime.zip build/artifact
+            pushd build/artifact
+            7z a -tzip $(dirs +1 -l)/onnxruntime.zip
+            popd
+          else
+            tar -czf onnxruntime.tar.gz -C build/artifact .
+          fi
+        shell: bash
+
+      - name: Upload artifact
+        if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
+        uses: actions/upload-artifact@v4
+        with:
+          name: ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ inputs.buildtype }}
+          path: ${{ contains(matrix.target, 'windows') && 'onnxruntime.zip' || 'onnxruntime.tar.gz' }}
+          if-no-files-found: error
