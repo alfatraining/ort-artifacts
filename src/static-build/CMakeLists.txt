@@ -191,10 +191,16 @@ endif()
 if(onnxruntime_USE_OPENVINO)
     add_dependencies(onnxruntime onnxruntime_providers_openvino)
 
-    install(IMPORTED_RUNTIME_ARTIFACTS onnxruntime_providers_shared LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
     install(IMPORTED_RUNTIME_ARTIFACTS onnxruntime_providers_shared RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-    install(IMPORTED_RUNTIME_ARTIFACTS onnxruntime_providers_openvino LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
     install(IMPORTED_RUNTIME_ARTIFACTS onnxruntime_providers_openvino RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+    if(WIN32)
+        install(IMPORTED_RUNTIME_ARTIFACTS onnxruntime_providers_openvino LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR})
+        install(IMPORTED_RUNTIME_ARTIFACTS onnxruntime_providers_shared LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR})
+    else()
+        install(IMPORTED_RUNTIME_ARTIFACTS onnxruntime_providers_openvino LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        install(IMPORTED_RUNTIME_ARTIFACTS onnxruntime_providers_shared LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    endif()
 
     string(STRIP $ENV{INTEL_OPENVINO_DIR} OPENVINO_PATH_RAW)
     cmake_path(SET OPENVINO_PATH ${OPENVINO_PATH_RAW})
