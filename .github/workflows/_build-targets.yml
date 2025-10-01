@@ -28,7 +28,7 @@ env:
 
 jobs:
   build:
-    name: Build ${{ matrix.target }} (${{ inputs.buildtype }})
+    name: Build ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ inputs.buildtype }}
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
