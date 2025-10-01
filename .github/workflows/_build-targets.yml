@@ -54,10 +54,10 @@ jobs:
             runs-on: macos-14
           - target: dylib-x86_64-macos
             args: "--xnnpack -N"
-            runs-on: macos-15-intel
+            runs-on: macos-14
           - target: static-x86_64-macos
             args: "--static --xnnpack -N"
-            runs-on: macos-15-intel
+            runs-on: macos-14
           - target: dylib-x86_64-windows-msvc-md
             args: "--directml --xnnpack --openvino -N"
             runs-on: windows-2025
