@@ -48,16 +48,16 @@ jobs:
             runs-on: ubuntu-24.04
           - target: dylib-aarch64-macos
             args: "-A aarch64 --xnnpack -N"
-            runs-on: macos-latest
+            runs-on: macos-14
           - target: static-aarch64-macos
             args: "--static -A aarch64 --xnnpack -N"
-            runs-on: macos-latest
+            runs-on: macos-14
           - target: dylib-x86_64-macos
             args: "--xnnpack -N"
-            runs-on: macos-latest
+            runs-on: macos-15-intel
           - target: static-x86_64-macos
             args: "--static --xnnpack -N"
-            runs-on: macos-latest
+            runs-on: macos-15-intel
           - target: dylib-x86_64-windows-msvc-md
             args: "--directml --xnnpack --openvino -N"
             runs-on: windows-2025
@@ -75,16 +75,16 @@ jobs:
             runs-on: ubuntu-24.04
           - target: dylib-aarch64-ios
             args: "-A aarch64 --iphoneos --xnnpack --coreml -N"
-            runs-on: macos-latest
+            runs-on: macos-14
           - target: static-aarch64-ios
             args: "--static --iphoneos -A aarch64 --xnnpack --coreml -N"
-            runs-on: macos-latest
+            runs-on: macos-14
           - target: dylib-aarch64-ios-simulator
             args: "-A aarch64 --iphonesimulator --xnnpack --coreml -N"
-            runs-on: macos-latest
+            runs-on: macos-14
           - target: static-aarch64-ios-simulator
             args: "--static --iphonesimulator -A aarch64 --xnnpack --coreml -N"
-            runs-on: macos-latest
+            runs-on: macos-14
           - target: dylib-aarch64-android
             args: "--android -A aarch64 --xnnpack --nnapi -N"
             runs-on: ubuntu-24.04
