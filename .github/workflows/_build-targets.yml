@@ -106,7 +106,7 @@ jobs:
           android: ${{ !contains(matrix.target, 'android') }}
           dotnet: true
           haskell: true
-          large-packages: true
+          large-packages: false
           docker-images: true
           swap-storage: true
 
