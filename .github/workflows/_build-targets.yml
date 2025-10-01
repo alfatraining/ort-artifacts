@@ -91,15 +91,8 @@ jobs:
           - target: static-aarch64-android
             args: "--static --android -A aarch64 --xnnpack --nnapi -N"
             runs-on: ubuntu-24.04
-    steps:
-      # - name: Free up disk space
-      #   if: contains(matrix.runs-on, 'ubuntu')
-      #   run: |
-      #     sudo rm -rf /usr/share/dotnet
-      #     sudo rm -rf /opt/ghc
-      #     sudo rm -rf "/usr/local/share/boost"
-      #     sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
+    steps:
       - name: Free Disk Space (Ubuntu)
         if: >
           contains(matrix.runs-on, 'ubuntu') &&
@@ -107,12 +100,7 @@ jobs:
           (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
         uses: ChrisCarini/free-disk-space@main
         with:
-          # this might remove tools that are actually needed,
-          # if set to "true" but frees about 6 GB
           tool-cache: false
-
-          # all of these default to true, but feel free to set to
-          # "false" if necessary for your workflow
           android: ${{ !contains(matrix.target, 'android') }}
           dotnet: true
           haskell: true
@@ -136,6 +124,7 @@ jobs:
           echo "/opt/linaro-toolchain/bin" >> $GITHUB_PATH
           sudo ln -sf /opt/linaro-toolchain/bin/aarch64-none-linux-gnu-gcc /usr/bin/aarch64-none-linux-gnu-gcc
           sudo ln -sf /opt/linaro-toolchain/bin/aarch64-none-linux-gnu-g++ /usr/bin/aarch64-none-linux-gnu-g++
+
       - uses: actions/checkout@v4
         if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
 
@@ -182,8 +171,12 @@ jobs:
           sudo apt-get install -y patchelf
           patchelf --clear-execstack build/artifact/onnxruntime/lib/libonnxruntime_sx${{ (inputs.buildtype == 'Debug') && 'd' || '' }}.so
 
-      - name: fix rpath
-        if: contains(matrix.args, '--openvino') && ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && contains(matrix.target, 'linux')
+      - name: Fix OpenVINO linux rpath
+        # NOTE: The version in the file path below must match the version for the `install-openvino-action` above
+        if: >
+          contains(matrix.args, '--openvino') && contains(matrix.target, 'linux') &&
+          (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) ||
+          (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset))))
         shell: bash
         run: |
           sudo apt-get update
@@ -195,8 +188,6 @@ jobs:
         if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
         run: |
           if [[ "${{ matrix.target }}" == *windows* ]]; then
-            # powershell -Command "Compress-Archive -Path build\\artifact\\* -DestinationPath onnxruntime.zip"
-            # 7z a -tzip onnxruntime.zip build/artifact
             pushd build/artifact
             7z a -tzip $(dirs +1 -l)/onnxruntime.zip
             popd
