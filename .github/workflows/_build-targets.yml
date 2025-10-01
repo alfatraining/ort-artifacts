@@ -96,8 +96,10 @@ jobs:
       - name: Free Disk Space (Ubuntu)
         if: >
           contains(matrix.runs-on, 'ubuntu') &&
-          (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) ||
-          (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
+          (
+            (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) ||
+            (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
+          )
         uses: ChrisCarini/free-disk-space@main
         with:
           tool-cache: false
