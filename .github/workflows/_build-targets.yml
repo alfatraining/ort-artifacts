@@ -175,8 +175,10 @@ jobs:
         # NOTE: The version in the file path below must match the version for the `install-openvino-action` above
         if: >
           contains(matrix.args, '--openvino') && contains(matrix.target, 'linux') &&
-          (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) ||
-          (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset))))
+          (
+            (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) ||
+            (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
+          )
         shell: bash
         run: |
           sudo apt-get update
