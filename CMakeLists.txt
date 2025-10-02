@@ -106,9 +106,14 @@ set(CMAKE_ARGS
     -Donnxruntime_CLIENT_PACKAGE_BUILD=ON
     -Donnxruntime_USE_TELEMETRY=OFF
     -Donnxruntime_BUILD_UNIT_TESTS=OFF
-    -Donnxruntime_USE_KLEIDIAI=ON
     -Donnxruntime_ENABLE_PYTHON=OFF
 )
+
+if(TARGET_ARCH STREQUAL "aarch64")
+    list(APPEND CMAKE_ARGS -Donnxruntime_USE_KLEIDIAI=ON)
+else()
+    list(APPEND CMAKE_ARGS -Donnxruntime_USE_KLEIDIAI=OFF)
+endif()
 
 # Determine source directory based on static build option
 if(STATIC_BUILD)
@@ -126,7 +131,7 @@ endif()
 # Platform-specific configuration
 if(PLATFORM_DARWIN)
     list(APPEND CMAKE_ARGS -Dprotobuf_BUILD_PROTOC_BINARIES=OFF)
-    
+
     # iOS vs macOS deployment target
     if(IPHONEOS OR IPHONESIMULATOR)
         list(APPEND CMAKE_ARGS -DCMAKE_OSX_DEPLOYMENT_TARGET=${IPHONE_DEPLOYMENT_TARGET} -DCMAKE_POLICY_VERSION_MINIMUM=3.5)
@@ -139,7 +144,7 @@ if(PLATFORM_DARWIN)
     else()
         list(APPEND CMAKE_ARGS -DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOS_DEPLOYMENT_TARGET})
     endif()
-    
+
     # Architecture selection for Darwin
     if(TARGET_ARCH STREQUAL "aarch64")
         list(APPEND CMAKE_ARGS -DCMAKE_OSX_ARCHITECTURES=arm64)
@@ -171,13 +176,13 @@ endif()
 if(PLATFORM_WIN32)
     # Windows-specific compiler flags
     set(COMPILER_FLAGS "_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR")
-    
+
     # ARM64 cross-compilation on Windows
     if(TARGET_ARCH STREQUAL "aarch64")
         list(APPEND CMAKE_ARGS -Donnxruntime_CROSS_COMPILING=ON -A ARM64)
         list(APPEND COMPILER_FLAGS "_SILENCE_ALL_CXX23_DEPRECATION_WARNINGS")
     endif()
-    
+
     # MSVC static runtime configuration
     if(MSVC_STATIC_RUNTIME)
         list(APPEND CMAKE_ARGS
@@ -196,7 +201,7 @@ if(PLATFORM_WIN32)
             -DABSL_MSVC_STATIC_RUNTIME=OFF
         )
     endif()
-    
+
     # Add compiler flags if any
     if(COMPILER_FLAGS)
         string(REPLACE ";" " -D" COMPILER_FLAGS_STR "-D${COMPILER_FLAGS}")
@@ -245,7 +250,7 @@ if(WASM)
     if(USE_WEBGPU)
         set(WEBGPU_ARG "--use_webgpu")
     endif()
-    
+
     ExternalProject_Add(onnxruntime
         GIT_REPOSITORY https://github.com/microsoft/onnxruntime
         GIT_TAG ${REFERENCE}
@@ -276,5 +281,3 @@ else()
 endif()
 
 message(STATUS "ONNX Runtime ExternalProject configured successfully")
-
-
