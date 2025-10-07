@@ -6,3 +6,4 @@ shrimp-rules.md
 /build-*
 /test_build
 /sampledata
+/run_*
