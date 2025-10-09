@@ -1,17 +1,15 @@
 diff --git a/cmake/onnxruntime_providers_dml.cmake b/cmake/onnxruntime_providers_dml.cmake
-index c8cf0b21a9..445516662e 100644
+index c8cf0b21a..237f8da70 100644
 --- a/cmake/onnxruntime_providers_dml.cmake
 +++ b/cmake/onnxruntime_providers_dml.cmake
-@@ -83,6 +83,16 @@
+@@ -83,6 +83,14 @@
      DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/onnxruntime/
    )
  
 +  install(
 +    FILES
-+      ${DML_PACKAGE_DIR}/bin/${onnxruntime_target_platform}-win/DirectML.dll
-+      ${DML_PACKAGE_DIR}/bin/${onnxruntime_target_platform}-win/DirectML.pdb
-+      ${DML_PACKAGE_DIR}/bin/${onnxruntime_target_platform}-win/DirectML.Debug.dll
-+      ${DML_PACKAGE_DIR}/bin/${onnxruntime_target_platform}-win/DirectML.Debug.pdb
++      ${DML_PACKAGE_DIR}/bin/${onnxruntime_target_platform}-win/DirectML$<$<CONFIG:Debug>:.Debug>.dll
++      ${DML_PACKAGE_DIR}/bin/${onnxruntime_target_platform}-win/DirectML$<$<CONFIG:Debug>:.Debug>.pdb
 +    DESTINATION
 +      ${CMAKE_INSTALL_BINDIR}/
 +  )
