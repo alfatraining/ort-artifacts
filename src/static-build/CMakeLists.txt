@@ -258,11 +258,18 @@ if(onnxruntime_USE_OPENVINO)
     )
 
     # For release builds, exclude debug files
-    if(OPENVINO_BUILD_CONFIG STREQUAL "Release")
+    # if(OPENVINO_BUILD_CONFIG STREQUAL "Release")
         # list(FILTER OPENVINO_RUNTIME_FILES EXCLUDE REGEX "_debug\\.${OPENVINO_LIB_EXTENSION}$")
         # list(FILTER OPENVINO_TBB_FILES EXCLUDE REGEX "_debug\\.${OPENVINO_LIB_EXTENSION}$")
-    endif()
+    # endif()
 
+    # after collecting all OpenVino and TBB runtime lib files, there might be
+    # release and debug versions of the same file in the lists (e.g. `<libname>.dll` and
+    # `<libname>d.dll` or `<libname>_debug.dll`). therefore, we iterate over each file list,
+    # find matching debug/release pairs of files, and remove one or the other, depending
+    # on the current build type.
+
+    # OpenVino runtime libs use the `d` postfix for debug builds
     set(OPENVINO_RUNTIME_EXCESS)
     foreach(libPath IN LISTS OPENVINO_RUNTIME_FILES)
         cmake_path(GET libPath EXTENSION libNameExt)
@@ -272,11 +279,12 @@ if(onnxruntime_USE_OPENVINO)
             if(OPENVINO_BUILD_CONFIG STREQUAL "Release")
                 list(APPEND OPENVINO_RUNTIME_EXCESS libPathDebug)
             elseif(OPENVINO_BUILD_CONFIG STREQUAL "Debug")
-                list(APPEND OPENVINO_RUNTIME_EXCESS libPath)
+                list(APPEND OPENVINO_RUNTIME_EXCESS "${libPath}")
             endif()
         endif()
     endforeach()
 
+    # TBB runtime libs use the `_debug` postfix for debug builds
     set(OPENVINO_TBB_EXCESS)
     foreach(libPath IN LISTS OPENVINO_TBB_FILES)
         cmake_path(GET libPath EXTENSION libNameExt)
@@ -287,7 +295,7 @@ if(onnxruntime_USE_OPENVINO)
             if(OPENVINO_BUILD_CONFIG STREQUAL "Release")
                 list(APPEND OPENVINO_TBB_EXCESS libPathDebug)
             elseif(OPENVINO_BUILD_CONFIG STREQUAL "Debug")
-                list(APPEND OPENVINO_TBB_EXCESS libPath)
+                list(APPEND OPENVINO_TBB_EXCESS "${libPath}")
             endif()
         endif()
     endforeach()
