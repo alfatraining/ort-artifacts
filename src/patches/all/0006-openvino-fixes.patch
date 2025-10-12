@@ -1,5 +1,5 @@
 diff --git a/cmake/onnxruntime_providers_openvino.cmake b/cmake/onnxruntime_providers_openvino.cmake
-index 03f67983c..b0aa190bd 100644
+index 03f67983c..780a0b20a 100644
 --- a/cmake/onnxruntime_providers_openvino.cmake
 +++ b/cmake/onnxruntime_providers_openvino.cmake
 @@ -51,12 +51,13 @@
@@ -17,7 +17,7 @@ index 03f67983c..b0aa190bd 100644
  
    if(MSVC)
      target_compile_options(onnxruntime_providers_openvino PRIVATE /wd4099 /wd4275 /wd4100 /wd4005)
-@@ -77,19 +78,113 @@
+@@ -77,19 +78,136 @@
      message(FATAL_ERROR "onnxruntime_providers_openvino unknown platform, need to specify shared library exports for it")
    endif()
  
@@ -113,11 +113,34 @@ index 03f67983c..b0aa190bd 100644
 +  "${OPENVINO_PATH}/runtime/3rdparty/tbb/bin/*.${OPENVINO_LIB_EXTENSION}.*"
 +)
 +
-+# For release builds, exclude debug files
-+if(OPENVINO_BUILD_CONFIG STREQUAL "Release")
-+  list(FILTER OPENVINO_RUNTIME_FILES EXCLUDE REGEX "_debug\\.${OPENVINO_LIB_EXTENSION}$")
-+  list(FILTER OPENVINO_TBB_FILES EXCLUDE REGEX "_debug\\.${OPENVINO_LIB_EXTENSION}$")
-+endif()
++message(STATUS "OPENVINO_TBB_PACKAGED_LIBS: ${OPENVINO_TBB_PACKAGED_LIBS}")
++list(LENGTH OPENVINO_TBB_PACKAGED_LIBS openvino_list_length)
++message(STATUS "OPENVINO_TBB_PACKAGED_LIBS contains ${openvino_list_length} items")
++
++set(OPENVINO_RUNTIME_EXCESS)
++foreach(libPath IN LISTS OPENVINO_RUNTIME_FILES)
++    cmake_path(GET libPath STEM libStem)
++    string(TOLOWER "${libStem}" libStemLower)
++    message(STATUS "PROVIDER CHECKING OPENVINO RT LIB: '${libStem}' -> '${libStemLower}'")
++    if(NOT (libStemLower IN_LIST OPENVINO_TBB_PACKAGED_LIBS))
++        list(APPEND OPENVINO_RUNTIME_EXCESS "${libPath}")
++    endif()
++endforeach()
++
++set(OPENVINO_TBB_EXCESS)
++foreach(libPath IN LISTS OPENVINO_TBB_FILES)
++    cmake_path(GET libPath STEM libStem)
++    string(TOLOWER "${libStem}" libStemLower)
++    message(STATUS "PROVIDER CHECKING OPENVINO TBB LIB: '${libStem}' -> '${libStemLower}'")
++    if(NOT (libStemLower IN_LIST OPENVINO_TBB_PACKAGED_LIBS))
++        list(APPEND OPENVINO_TBB_EXCESS "${libPath}")
++    endif()
++endforeach()
++
++message(STATUS "CMAKELISTS REMOVING OPENVINO_RUNTIME_FILES: 'list(REMOVE_ITEM OPENVINO_RUNTIME_FILES ${OPENVINO_RUNTIME_EXCESS})'")
++message(STATUS "CMAKELISTS REMOVING OPENVINO_TBB_FILES: 'list(REMOVE_ITEM OPENVINO_TBB_FILES ${OPENVINO_TBB_EXCESS})'")
++list(REMOVE_ITEM OPENVINO_RUNTIME_FILES ${OPENVINO_RUNTIME_EXCESS})
++list(REMOVE_ITEM OPENVINO_TBB_FILES ${OPENVINO_TBB_EXCESS})
 +
 +# file(GLOB_RECURSE ALL_DAMN_OPENVINO_FILES LIST_DIRECTORIES true RELATIVE "${OPENVINO_PATH}" "${OPENVINO_PATH}/*")
 +# message(FATAL_ERROR "OPENVINO STATIC: '${OPENVINO_PATH}', '${OPENVINO_RUNTIME_FILES}', '${OPENVINO_TBB_FILES}', '${ALL_DAMN_OPENVINO_FILES}'")

@@ -238,6 +238,32 @@ if(USE_OPENVINO AND (PLATFORM_WIN32 OR PLATFORM_LINUX))
         -Donnxruntime_USE_OPENVINO_NPU=ON
         -Donnxruntime_DISABLE_RTTI=OFF
     )
+
+    if(WIN32)
+        if((CMAKE_BUILD_TYPE MATCHES "Debug") OR ("Debug" IN_LIST CMAKE_CONFIGURATION_TYPES))
+            set(OPENVINO_BUILD_CONFIG "Debug")
+        else()
+            set(OPENVINO_BUILD_CONFIG "Release")
+        endif()
+    else()
+        # non-windows binary downloads only ship a single variant (OpenVino and TBB)
+        set(OPENVINO_BUILD_CONFIG "Release")
+    endif()
+
+    cmake_path(APPEND CMAKE_CURRENT_SOURCE_DIR "openvino_tbb_libs_${OPENVINO_BUILD_CONFIG}.txt"
+        OUTPUT_VARIABLE OPENVINO_TBB_INCLUDED_LIBS_LIST_FILE)
+    if(IS_READABLE "${OPENVINO_TBB_INCLUDED_LIBS_LIST_FILE}")
+        file(STRINGS "${OPENVINO_TBB_INCLUDED_LIBS_LIST_FILE}" OPENVINO_TBB_PACKAGED_LIBS)
+        list(TRANSFORM OPENVINO_TBB_PACKAGED_LIBS TOLOWER)
+        if(NOT WIN32)
+            list(TRANSFORM OPENVINO_TBB_PACKAGED_LIBS PREPEND lib)
+        endif()
+    else()
+        set(OPENVINO_TBB_PACKAGED_LIBS)
+    endif()
+
+    string(REPLACE ";" "<|>" OPENVINO_TBB_PACKAGED_LIBS_SEP "${OPENVINO_TBB_PACKAGED_LIBS}")
+    list(APPEND CMAKE_ARGS -DOPENVINO_TBB_PACKAGED_LIBS=${OPENVINO_TBB_PACKAGED_LIBS_SEP})
 endif()
 
 if(USE_NNAPI AND ANDROID)

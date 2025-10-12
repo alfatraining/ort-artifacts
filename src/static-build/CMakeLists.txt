@@ -263,45 +263,32 @@ if(onnxruntime_USE_OPENVINO)
         # list(FILTER OPENVINO_TBB_FILES EXCLUDE REGEX "_debug\\.${OPENVINO_LIB_EXTENSION}$")
     # endif()
 
-    # after collecting all OpenVino and TBB runtime lib files, there might be
-    # release and debug versions of the same file in the lists (e.g. `<libname>.dll` and
-    # `<libname>d.dll` or `<libname>_debug.dll`). therefore, we iterate over each file list,
-    # find matching debug/release pairs of files, and remove one or the other, depending
-    # on the current build type.
+    message(STATUS "STATIC CMAKELISTS OPENVINO_TBB_PACKAGED_LIBS: ${OPENVINO_TBB_PACKAGED_LIBS}")
+    list(LENGTH OPENVINO_TBB_PACKAGED_LIBS openvino_list_length)
+    message(STATUS "OPENVINO_TBB_PACKAGED_LIBS contains ${openvino_list_length} items")
 
-    # OpenVino runtime libs use the `d` postfix for debug builds
     set(OPENVINO_RUNTIME_EXCESS)
     foreach(libPath IN LISTS OPENVINO_RUNTIME_FILES)
-        cmake_path(GET libPath EXTENSION libNameExt)
-        cmake_path(REMOVE_EXTENSION libPath OUTPUT_VARIABLE libPathBase)
-        cmake_path(APPEND_STRING libPathBase "d${libNameExt}" OUTPUT_VARIABLE libPathDebug)
-        if(libPathDebug IN_LIST OPENVINO_RUNTIME_FILES)
-            if(OPENVINO_BUILD_CONFIG STREQUAL "Release")
-                list(APPEND OPENVINO_RUNTIME_EXCESS libPathDebug)
-            elseif(OPENVINO_BUILD_CONFIG STREQUAL "Debug")
-                list(APPEND OPENVINO_RUNTIME_EXCESS "${libPath}")
-            endif()
+        cmake_path(GET libPath STEM libStem)
+        string(TOLOWER "${libStem}" libStemLower)
+        message(STATUS "CHECKING OPENVINO RT LIB: '${libStem}' -> '${libStemLower}'")
+        if(NOT (libStemLower IN_LIST OPENVINO_TBB_PACKAGED_LIBS))
+            list(APPEND OPENVINO_RUNTIME_EXCESS "${libPath}")
         endif()
     endforeach()
 
-    # TBB runtime libs use the `_debug` postfix for debug builds
     set(OPENVINO_TBB_EXCESS)
     foreach(libPath IN LISTS OPENVINO_TBB_FILES)
-        cmake_path(GET libPath EXTENSION libNameExt)
-        cmake_path(REMOVE_EXTENSION libPath OUTPUT_VARIABLE libPathBase)
-        cmake_path(APPEND_STRING libPathBase "_debug${libNameExt}" OUTPUT_VARIABLE libPathDebug)
-        message(STATUS "CHECKING OPENVINO TBB LIB '${libPath}', '${libPathBase}', '${libPathDebug}'")
-        if(libPathDebug IN_LIST OPENVINO_TBB_FILES)
-            if(OPENVINO_BUILD_CONFIG STREQUAL "Release")
-                list(APPEND OPENVINO_TBB_EXCESS libPathDebug)
-            elseif(OPENVINO_BUILD_CONFIG STREQUAL "Debug")
-                list(APPEND OPENVINO_TBB_EXCESS "${libPath}")
-            endif()
+        cmake_path(GET libPath STEM libStem)
+        string(TOLOWER "${libStem}" libStemLower)
+        message(STATUS "CHECKING OPENVINO TBB LIB: '${libStem}' -> '${libStemLower}'")
+        if(NOT (libStemLower IN_LIST OPENVINO_TBB_PACKAGED_LIBS))
+            list(APPEND OPENVINO_TBB_EXCESS "${libPath}")
         endif()
     endforeach()
 
-    message(STATUS "REMOVING OPENVINO_RUNTIME_FILES: 'list(REMOVE_ITEM OPENVINO_RUNTIME_FILES ${OPENVINO_RUNTIME_EXCESS})'")
-    message(STATUS "REMOVING OPENVINO_TBB_FILES: 'list(REMOVE_ITEM OPENVINO_TBB_FILES ${OPENVINO_TBB_EXCESS})'")
+    message(STATUS "STATIC CMAKELISTS REMOVING OPENVINO_RUNTIME_FILES: 'list(REMOVE_ITEM OPENVINO_RUNTIME_FILES ${OPENVINO_RUNTIME_EXCESS})'")
+    message(STATUS "STATIC CMAKELISTS REMOVING OPENVINO_TBB_FILES: 'list(REMOVE_ITEM OPENVINO_TBB_FILES ${OPENVINO_TBB_EXCESS})'")
     list(REMOVE_ITEM OPENVINO_RUNTIME_FILES ${OPENVINO_RUNTIME_EXCESS})
     list(REMOVE_ITEM OPENVINO_TBB_FILES ${OPENVINO_TBB_EXCESS})
 
