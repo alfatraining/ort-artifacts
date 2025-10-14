@@ -269,27 +269,6 @@ if(onnxruntime_USE_OPENVINO)
     list(REMOVE_ITEM OPENVINO_RUNTIME_FILES ${OPENVINO_EXCESS_FILES})
     list(REMOVE_ITEM OPENVINO_TBB_FILES ${OPENVINO_EXCESS_FILES})
 
-    # set(OPENVINO_RUNTIME_EXCESS)
-    # foreach(libPath IN LISTS OPENVINO_RUNTIME_FILES)
-    #     cmake_path(GET libPath STEM libStem)
-    #     string(TOLOWER "${libStem}" libStemLower)
-    #     if(NOT (libStemLower IN_LIST OPENVINO_TBB_PACKAGED_LIBS))
-    #         list(APPEND OPENVINO_RUNTIME_EXCESS "${libPath}")
-    #     endif()
-    # endforeach()
-
-    # set(OPENVINO_TBB_EXCESS)
-    # foreach(libPath IN LISTS OPENVINO_TBB_FILES)
-    #     cmake_path(GET libPath STEM libStem)
-    #     string(TOLOWER "${libStem}" libStemLower)
-    #     if(NOT (libStemLower IN_LIST OPENVINO_TBB_PACKAGED_LIBS))
-    #         list(APPEND OPENVINO_TBB_EXCESS "${libPath}")
-    #     endif()
-    # endforeach()
-
-    # list(REMOVE_ITEM OPENVINO_RUNTIME_FILES ${OPENVINO_RUNTIME_EXCESS})
-    # list(REMOVE_ITEM OPENVINO_TBB_FILES ${OPENVINO_TBB_EXCESS})
-
     # Install all found libraries
     if(OPENVINO_RUNTIME_FILES OR OPENVINO_TBB_FILES)
         if(WIN32)
