@@ -1,9 +1,10 @@
 .DS_store
 /build
+/build_*
+/build-*
+/test_build
 shrimp-rules.md
 .mcp.json
 .claude/settings.local.json
-/build-*
-/test_build
 /sampledata
 /run_*
