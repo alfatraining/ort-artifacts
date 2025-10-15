@@ -1,0 +1,61 @@
+diff --git a/cmake/onnxruntime.cmake b/cmake/onnxruntime.cmake
+index 6c1d4485e..bba561f69 100644
+--- a/cmake/onnxruntime.cmake
++++ b/cmake/onnxruntime.cmake
+@@ -140,7 +140,12 @@ endif()
+ target_include_directories(onnxruntime PRIVATE ${ONNXRUNTIME_ROOT} PUBLIC "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/onnxruntime>")
+ 
+ 
+-target_compile_definitions(onnxruntime PRIVATE FILE_NAME=\"onnxruntime.dll\")
++target_compile_definitions(onnxruntime PRIVATE FILE_NAME=\"onnxruntime_sx$<$<CONFIG:Debug>:Debug>.dll\")
++set_target_properties(onnxruntime PROPERTIES OUTPUT_NAME "onnxruntime_sx")
++
++if((CMAKE_BUILD_TYPE MATCHES "Debug") OR ("Debug" IN_LIST CMAKE_CONFIGURATION_TYPES))
++  add_compile_definitions(SX_DEBUG_BUILD)
++endif()
+ 
+ if(UNIX)
+   if (APPLE)
+@@ -273,7 +278,8 @@ if(NOT APPLE AND NOT WIN32)
+       LINK_DEPENDS ${SYMBOL_FILE}
+       VERSION ${ORT_VERSION}
+       SOVERSION 1
+-      FOLDER "ONNXRuntime")
++      FOLDER "ONNXRuntime"
++      NO_SONAME 1) # AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+   endif()
+ else()
+   # Omit the SOVERSION setting in Windows/macOS/iOS/.. build
+diff --git a/onnxruntime/core/session/provider_bridge_ort.cc b/onnxruntime/core/session/provider_bridge_ort.cc
+index 7fcaee485..0ea5d1078 100644
+--- a/onnxruntime/core/session/provider_bridge_ort.cc
++++ b/onnxruntime/core/session/provider_bridge_ort.cc
+@@ -132,13 +132,25 @@ using EtwRegistrationManager_EtwInternalCallback = EtwRegistrationManager::EtwIn
+ // The filename extension for a shared library is different per platform
+ #ifdef _WIN32
+ #define LIBRARY_PREFIX
+-#define LIBRARY_EXTENSION ORT_TSTR(".dll")
++#ifdef SX_DEBUG_BUILD
++  #define LIBRARY_EXTENSION ORT_TSTR("d.dll")
++#else
++  #define LIBRARY_EXTENSION ORT_TSTR(".dll")
++#endif
+ #elif defined(__APPLE__)
+ #define LIBRARY_PREFIX "lib"
+-#define LIBRARY_EXTENSION ".dylib"
++#ifdef SX_DEBUG_BUILD
++  #define LIBRARY_EXTENSION ORT_TSTR("d.dylib")
++#else
++  #define LIBRARY_EXTENSION ORT_TSTR(".dylib")
++#endif
+ #else
+ #define LIBRARY_PREFIX "lib"
+-#define LIBRARY_EXTENSION ".so"
++#ifdef SX_DEBUG_BUILD
++  #define LIBRARY_EXTENSION ORT_TSTR("d.so")
++#else
++  #define LIBRARY_EXTENSION ORT_TSTR(".so")
++#endif
+ #endif
+ 
+ #ifdef __GNUC__

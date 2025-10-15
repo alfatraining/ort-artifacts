@@ -1,8 +1,8 @@
 diff --git a/cmake/onnxruntime_providers_openvino.cmake b/cmake/onnxruntime_providers_openvino.cmake
-index 5a831a106..90967501f 100644
+index 03f67983c..050de3746 100644
 --- a/cmake/onnxruntime_providers_openvino.cmake
 +++ b/cmake/onnxruntime_providers_openvino.cmake
-@@ -46,12 +46,13 @@
+@@ -51,12 +51,13 @@
  
    if(NOT MSVC)
      target_compile_options(onnxruntime_providers_openvino PRIVATE "-Wno-parentheses")
@@ -10,32 +10,29 @@ index 5a831a106..90967501f 100644
    endif()
    add_dependencies(onnxruntime_providers_openvino onnxruntime_providers_shared ${onnxruntime_EXTERNAL_DEPENDENCIES})
    target_include_directories(onnxruntime_providers_openvino SYSTEM PUBLIC ${ONNXRUNTIME_ROOT} ${CMAKE_CURRENT_BINARY_DIR} ${OpenVINO_INCLUDE_DIR} ${OPENVINO_INCLUDE_DIR_LIST} ${PYTHON_INCLUDE_DIRS} $ENV{OPENCL_INCS} $ENV{OPENCL_INCS}/../../cl_headers/)
-   target_link_libraries(onnxruntime_providers_openvino ${ONNXRUNTIME_PROVIDERS_SHARED} Boost::mp11 ${OPENVINO_LIB_LIST} ${ABSEIL_LIBS} Eigen3::Eigen onnx_proto)
+   target_link_libraries(onnxruntime_providers_openvino ${ONNXRUNTIME_PROVIDERS_SHARED} Boost::mp11 ${OPENVINO_LIB_LIST} ${ABSEIL_LIBS} Eigen3::Eigen)
  
 -  target_compile_definitions(onnxruntime_providers_openvino PRIVATE FILE_NAME=\"onnxruntime_providers_openvino.dll\")
 +  target_compile_definitions(onnxruntime_providers_openvino PRIVATE FILE_NAME=\"onnxruntime_providers_openvino$<$<CONFIG:Debug>:d>.dll\")
  
    if(MSVC)
      target_compile_options(onnxruntime_providers_openvino PRIVATE /wd4099 /wd4275 /wd4100 /wd4005)
-@@ -72,19 +73,116 @@
+@@ -77,19 +78,116 @@
      message(FATAL_ERROR "onnxruntime_providers_openvino unknown platform, need to specify shared library exports for it")
    endif()
  
 -  if (CMAKE_OPENVINO_LIBRARY_INSTALL_DIR)
 +  if(WIN32 AND (NOT CMAKE_OPENVINO_LIBRARY_INSTALL_DIR))
      install(TARGETS onnxruntime_providers_openvino
--            ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
+             ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
 -            LIBRARY  DESTINATION ${CMAKE_OPENVINO_LIBRARY_INSTALL_DIR}
--            RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})
--  else()
++            LIBRARY  DESTINATION ${CMAKE_INSTALL_BINDIR}
+             RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})
+   else()
 -    install(TARGETS onnxruntime_providers_openvino
 -            ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
 -            LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
 -            RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})
-+             ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
-+            LIBRARY  DESTINATION ${CMAKE_INSTALL_BINDIR}
-+             RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})
-+   else()
 +    if (CMAKE_OPENVINO_LIBRARY_INSTALL_DIR)
 +      install(TARGETS onnxruntime_providers_openvino
 +              ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}

@@ -1,34 +1,36 @@
 diff --git a/include/onnxruntime/core/framework/ortdevice.h b/include/onnxruntime/core/framework/ortdevice.h
-index adade482f..8c63519d7 100644
+index fea970b84..cba9ddc02 100644
 --- a/include/onnxruntime/core/framework/ortdevice.h
 +++ b/include/onnxruntime/core/framework/ortdevice.h
-@@ -13,19 +13,19 @@ struct OrtDevice {
-   using DeviceId = int16_t;
-
+@@ -24,16 +24,16 @@ struct OrtDevice {
+   using Alignment = size_t;
+ 
    // Pre-defined device types.
 -  static const DeviceType CPU = 0;
--  static const DeviceType GPU = 1;  // Nvidia or AMD
+-  static const DeviceType GPU = 1;
 -  static const DeviceType FPGA = 2;
--  static const DeviceType NPU = 3;  // Ascend
--  static const DeviceType DML = 4;
+-  static const DeviceType NPU = 3;
 +  static inline const DeviceType CPU = 0;
-+  static inline const DeviceType GPU = 1;  // Nvidia or AMD
++  static inline const DeviceType GPU = 1;
 +  static inline const DeviceType FPGA = 2;
-+  static inline const DeviceType NPU = 3;  // Ascend
++  static inline const DeviceType NPU = 3;
+   // this is used in the python API so we need to keep it for backward compatibility
+   // it is only used in the OrtDevice ctor, and is mapped to GPU + VendorIds::MICROSOFT
+-  static const DeviceType DML = 4;
 +  static inline const DeviceType DML = 4;
-
+ 
    struct MemType {
-     // Pre-defined memory types.
 -    static const MemoryType DEFAULT = 0;
--    static const MemoryType CUDA_PINNED = 1;
--    static const MemoryType HIP_PINNED = 2;
--    static const MemoryType CANN_PINNED = 3;
--    static const MemoryType QNN_HTP_SHARED = 4;
 +    static inline const MemoryType DEFAULT = 0;
-+    static inline const MemoryType CUDA_PINNED = 1;
-+    static inline const MemoryType HIP_PINNED = 2;
-+    static inline const MemoryType CANN_PINNED = 3;
-+    static inline const MemoryType QNN_HTP_SHARED = 4;
+ 
+     // deprecated values. MemType + VendorId is used to identify the memory type.
+     enum Deprecated : MemoryType {
+@@ -49,7 +49,7 @@ struct OrtDevice {
+     //   - When creating an OrtDevice for an EP allocator, you would typically use the same device type and id
+     //     that the EP is registered with (i.e. the OrtDevice passed to the base IExecutionProvider constructor).
+     //   - Otherwise use OrtDevice::CPU.
+-    static const MemoryType HOST_ACCESSIBLE = 5;
++    static inline const MemoryType HOST_ACCESSIBLE = 5;
    };
-
-   constexpr OrtDevice(DeviceType device_type_, MemoryType memory_type_, DeviceId device_id_)
+ 
+   // PCI vendor ids
