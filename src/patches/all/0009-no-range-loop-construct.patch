@@ -1,0 +1,13 @@
+diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
+index baf21745e..2f467c295 100644
+--- a/cmake/CMakeLists.txt
++++ b/cmake/CMakeLists.txt
+@@ -1107,6 +1107,8 @@ function(onnxruntime_set_compile_flags target_name)
+       if (CMAKE_CXX_COMPILER_ID STREQUAL "IBMClang")
+         target_compile_options(${target_name} PRIVATE "-Wno-unused-function")
+       endif()
++
++      target_compile_options(${target_name} PRIVATE "-Wno-range-loop-construct")
+     endif()
+     foreach(ORT_FLAG ${ORT_PROVIDER_FLAGS})
+       target_compile_definitions(${target_name} PRIVATE ${ORT_FLAG})
