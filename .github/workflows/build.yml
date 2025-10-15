@@ -4,8 +4,8 @@ on:
     inputs:
       onnxruntime-ref:
         type: string
-        description: "ONNX Runtime repository reference, e.g., 'rel-1.22.2' or 'main'"
-        default: "v1.22.2"
+        description: "ONNX Runtime repository reference, e.g., 'v1.22.2' or 'main'"
+        default: "v1.23.1"
       target-preset:
         type: choice
         description: "Select a predefined target"
@@ -46,8 +46,8 @@ on:
           - 'Debug'
 
 env:
-  # GCC_VERSION: '14.3'
-  GCC_VERSION: '11'
+  GCC_VERSION: '14.3'
+  # GCC_VERSION: '11'
   CMAKE_VERSION: '3.28'
   PYTHON_VERSION: '3.10'
   XCODE_VERSION: '14.3.1'
