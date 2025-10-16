@@ -162,9 +162,8 @@ jobs:
           CMAKE_SYSROOT: ${{ (matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux') && '/opt/linaro-toolchain/aarch64-none-linux-gnu/libc' || '' }}
           CMAKE_FIND_ROOT_PATH: ${{ (matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux') && '/opt/linaro-toolchain/aarch64-none-linux-gnu' || '' }}
         shell: bash
-        # ./build.sh -r "${{ inputs.onnxruntime-ref }}" -b "${{ inputs.buildtype }}" ${{ matrix.args }}
         run: |
-          ./build.sh -r "${{ inputs.onnxruntime-ref }}" -b "${{ (contains(matrix.target, 'windows') && contains(inputs.buildtype, 'Release')) && 'MinSizeRel' || inputs.buildtype }}" ${{ matrix.args }}
+          ./build.sh -r "${{ inputs.onnxruntime-ref }}" -b "${{ inputs.buildtype }}" ${{ matrix.args }}
 
       # See: https://github.com/microsoft/onnxruntime/issues/24911
       - name: Remove executable stack flag
