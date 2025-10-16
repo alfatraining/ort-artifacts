@@ -1,8 +1,8 @@
 diff --git a/cmake/onnxruntime.cmake b/cmake/onnxruntime.cmake
-index 010696a61..dfd6fd012 100644
+index 010696a61..d139faa75 100644
 --- a/cmake/onnxruntime.cmake
 +++ b/cmake/onnxruntime.cmake
-@@ -142,8 +142,16 @@ if(onnxruntime_BUILD_SHARED_LIB)
+@@ -142,8 +142,12 @@ if(onnxruntime_BUILD_SHARED_LIB)
    endif()
    target_include_directories(onnxruntime PRIVATE ${ONNXRUNTIME_ROOT} PUBLIC "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/onnxruntime>")
  
@@ -10,17 +10,13 @@ index 010696a61..dfd6fd012 100644
 +  set_target_properties(onnxruntime PROPERTIES OUTPUT_NAME "onnxruntime_sx")
  
 -  target_compile_definitions(onnxruntime PRIVATE FILE_NAME=\"onnxruntime.dll\")
-+  if(MSVC)
-+    add_link_options("/maxilksize:0x7ff00000")
-+  endif()
-+
 +  if((CMAKE_BUILD_TYPE MATCHES "Debug") OR ("Debug" IN_LIST CMAKE_CONFIGURATION_TYPES))
 +    add_compile_definitions(SX_DEBUG_BUILD)
 +  endif()
  
    if(UNIX)
      if (APPLE)
-@@ -289,7 +297,9 @@ if(NOT APPLE AND NOT WIN32)
+@@ -289,7 +293,9 @@ if(NOT APPLE AND NOT WIN32)
        PUBLIC_HEADER "${ONNXRUNTIME_PUBLIC_HEADERS}"
        VERSION ${ORT_VERSION}
        SOVERSION 1
