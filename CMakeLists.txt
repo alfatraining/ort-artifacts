@@ -125,7 +125,12 @@ if(STATIC_BUILD)
 else()
     set(SOURCE_SUBDIR cmake)
     list(APPEND CMAKE_ARGS -Donnxruntime_BUILD_SHARED_LIB=ON)
-    list(APPEND CMAKE_ARGS -Donnxruntime_ENABLE_LTO=ON)
+
+    if(MSVC)
+        list(APPEND CMAKE_ARGS -Donnxruntime_ENABLE_LTO=OFF)
+    else()
+        list(APPEND CMAKE_ARGS -Donnxruntime_ENABLE_LTO=ON)
+    endif()
 endif()
 
 # Platform-specific configuration
