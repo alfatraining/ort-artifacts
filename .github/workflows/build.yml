@@ -46,8 +46,8 @@ on:
           - 'Debug'
 
 env:
-  # GCC_VERSION: '14.3'
-  GCC_VERSION: '11'
+  GCC_VERSION: '14.3'
+  # GCC_VERSION: '11'
   CMAKE_VERSION: '3.28'
   PYTHON_VERSION: '3.10'
   XCODE_VERSION: '14.3.1'
