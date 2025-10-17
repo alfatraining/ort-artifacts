@@ -8,3 +8,4 @@ shrimp-rules.md
 .claude/settings.local.json
 /sampledata
 /run_*
+/openvino_tests
