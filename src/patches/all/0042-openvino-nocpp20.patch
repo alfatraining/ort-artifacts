@@ -1,0 +1,125 @@
+diff --git a/onnxruntime/core/providers/openvino/ov_factory.cc b/onnxruntime/core/providers/openvino/ov_factory.cc
+index 2853cc177..0dba8a331 100644
+--- a/onnxruntime/core/providers/openvino/ov_factory.cc
++++ b/onnxruntime/core/providers/openvino/ov_factory.cc
+@@ -7,7 +7,7 @@
+ #include <algorithm>
+ #include <vector>
+ #include <ranges>
+-#include <format>
++// #include <format>
+ 
+ #define ORT_API_MANUAL_INIT
+ #include "onnxruntime_cxx_api.h"
+@@ -170,7 +170,8 @@ OrtStatus* CreateEpFactories(const char* /*registration_name*/, const OrtApiBase
+ 
+   const size_t required_factories = supported_factories.size();
+   if (max_factories < required_factories) {
+-    return Ort::Status(std::format("Not enough space to return EP factories. Need at least {} factories.", required_factories).c_str(), ORT_INVALID_ARGUMENT);
++    // return Ort::Status(std::format("Not enough space to return EP factories. Need at least {} factories.", required_factories).c_str(), ORT_INVALID_ARGUMENT);
++    return Ort::Status((std::string("Not enough space to return EP factories. Need at least ") + std::to_string(required_factories) + " factories.").c_str(), ORT_INVALID_ARGUMENT);
+   }
+ 
+   size_t factory_index = 0;
+diff --git a/onnxruntime/core/providers/openvino/ov_interface.cc b/onnxruntime/core/providers/openvino/ov_interface.cc
+index 899845d48..dd0617eac 100644
+--- a/onnxruntime/core/providers/openvino/ov_interface.cc
++++ b/onnxruntime/core/providers/openvino/ov_interface.cc
+@@ -3,8 +3,6 @@
+ 
+ #include "core/providers/openvino/ov_interface.h"
+ 
+-#include <format>
+-
+ #define ORT_API_MANUAL_INIT
+ #include "core/session/onnxruntime_cxx_api.h"
+ #include "core/providers/shared_library/provider_api.h"
+@@ -16,14 +14,14 @@
+ namespace onnxruntime {
+ namespace openvino_ep {
+ 
+-template <typename Func, typename... Args>
+-inline auto OvExceptionBoundary(Func&& func, std::format_string<Args...>&& fmt, Args&&... args) {
++template <typename Func>
++inline auto OvExceptionBoundary(Func&& func, const std::string& message) {
+   try {
+     return func();
+   } catch (const ov::Exception& e) {
+-    ORT_THROW(log_tag + std::vformat(fmt.get(), std::make_format_args(args...)) + ": " + std::string(e.what()));
++    ORT_THROW(log_tag + message + ": " + std::string(e.what()));
+   } catch (...) {
+-    ORT_THROW(log_tag + std::vformat(fmt.get(), std::make_format_args(args...)));
++    ORT_THROW(log_tag + message);
+   }
+ }
+ 
+@@ -172,7 +170,7 @@ OVExeNetwork OVCore::CompileModel(std::shared_ptr<const OVNetwork>& ie_cnn_netwo
+ 
+     return exe;
+   },
+-                             "Exception while Loading Network for graph {}", name);
++                             "Exception while Loading Network for graph " + name);
+ }
+ 
+ OVExeNetwork OVCore::CompileModel(const std::string& onnx_model,
+@@ -189,7 +187,7 @@ OVExeNetwork OVCore::CompileModel(const std::string& onnx_model,
+     OVExeNetwork exe(obj, hw_target);
+     return exe;
+   },
+-                             "Exception while Loading Network for graph {}", name);
++                             "Exception while Loading Network for graph " + name);
+ }
+ 
+ OVExeNetwork OVCore::ImportModel(ModelBlobWrapper& model_blob,
+@@ -214,7 +212,7 @@ OVExeNetwork OVCore::ImportModel(ModelBlobWrapper& model_blob,
+ #endif
+     return exe;
+   },
+-                             "Exception while Loading Network for graph {}", name);
++                             "Exception while Loading Network for graph " + name);
+ }
+ 
+ OVExeNetwork OVCore::ImportEPCtxOVIREncapsulation(std::istream& model_stream,
+@@ -267,7 +265,7 @@ OVExeNetwork OVCore::ImportEPCtxOVIREncapsulation(std::istream& model_stream,
+ #endif
+     return exe;
+   },
+-                             "Exception while Loading Network from OVIR model file: {}", model_file_path.string());
++                             "Exception while Loading Network from OVIR model file: " + model_file_path.string());
+ }
+ 
+ void OVCore::SetCache(const std::string& cache_dir_path) {
+@@ -327,7 +325,6 @@ std::shared_ptr<OVInferRequest> OVExeNetwork::CreateInferRequest() {
+     }
+     return ovInfReq;
+   },
+-
+                              "Exception while creating InferRequest object");
+ }
+ 
+@@ -337,7 +334,7 @@ OVTensorPtr OVInferRequest::GetTensor(const std::string& input_name) {
+     OVTensorPtr blob = std::make_shared<OVTensor>(tobj);
+     return blob;
+   },
+-                             " Cannot access IE Blob for input: {}", input_name);
++                             " Cannot access IE Blob for input: " + input_name);
+ }
+ 
+ std::string OVInferRequest::GetInputTensorName(uint32_t index) {
+@@ -345,14 +342,14 @@ std::string OVInferRequest::GetInputTensorName(uint32_t index) {
+     const auto& model = ovInfReq.get_compiled_model();
+     return *model.input(index).get_names().begin();
+   },
+-                             " Cannot access IE Blob for input number: {}", index);
++                             " Cannot access IE Blob for input number: " + std::to_string(index));
+ }
+ 
+ void OVInferRequest::SetTensor(const std::string& name, OVTensorPtr& blob) {
+   OvExceptionBoundary([&]() {
+     ovInfReq.set_tensor(name, *(blob.get()));
+   },
+-                      " Cannot set Remote Blob for output: {}", name);
++                      " Cannot set Remote Blob for output: " + name);
+ }
+ 
+ uint32_t OVInferRequest::GetNumInputs() {
