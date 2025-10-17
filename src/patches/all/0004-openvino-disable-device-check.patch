@@ -1,0 +1,54 @@
+diff --git a/onnxruntime/core/providers/openvino/openvino_provider_factory.cc b/onnxruntime/core/providers/openvino/openvino_provider_factory.cc
+index 1a10d9849..4cf75b05a 100644
+--- a/onnxruntime/core/providers/openvino/openvino_provider_factory.cc
++++ b/onnxruntime/core/providers/openvino/openvino_provider_factory.cc
+@@ -117,8 +117,10 @@ std::string ParseDeviceType(std::shared_ptr<OVCore> ov_core, const ProviderOptio
+     luid_list = split(luid_str, ',');
+   }
+ 
++  std::vector<std::string> selected_devices;
+   for (auto device : devices_to_check) {
+-    bool device_found = false;
++    // bool device_found = false;
++    const auto full_device_name = device;
+     // Check deprecated device format (CPU_FP32, GPU.0_FP16, etc.) and remove the suffix in place
+     // Suffix will be parsed in ParsePrecision
+     if (auto delimit = device.find("_"); delimit != std::string::npos) {
+@@ -134,9 +136,13 @@ std::string ParseDeviceType(std::shared_ptr<OVCore> ov_core, const ProviderOptio
+         std::vector<std::string> available_devices = ov_core->GetAvailableDevices(device_prefix);
+         // Here we need to find the full device name (with .idx, but without _precision)
+         if (std::find(std::begin(available_devices), std::end(available_devices), device) != std::end(available_devices))
+-          device_found = true;
+-        if (!device_found) {
+-          ORT_THROW("[ERROR] [OpenVINO] Device ", device, " is not available");
++        {
++          // device_found = true;
++          selected_devices.push_back(full_device_name);
++        }
++        else {
++          // ORT_THROW("[ERROR] [OpenVINO] Device ", device, " is not available");
++          continue;
+         }
+         if (device_prefix != "CPU" && luid_list.size() > 0) {
+           for (const auto& dev : available_devices) {
+@@ -180,6 +186,20 @@ std::string ParseDeviceType(std::shared_ptr<OVCore> ov_core, const ProviderOptio
+       selected_device = std::move(ov_luid_devices);
+     }
+   }
++  else
++  {
++    selected_device.clear();
++    for(const auto &dev : selected_devices)
++    {
++      if(!selected_device.empty()) selected_device += ",";
++      selected_device += dev;
++    }
++
++    if(!device_mode.empty())
++    {
++      selected_device = device_mode + ":" + selected_device;
++    }
++  }
+ 
+   LOGS_DEFAULT(INFO) << "[OpenVINO-EP] Choosing Device: " << selected_device;
+   return selected_device;
