@@ -151,7 +151,8 @@ jobs:
         with:
           version: "2025.2"
           arch: ${{ contains(matrix.target, 'aarch64') && 'arm64' || 'x86_64' }}
-          release: ${{ contains(matrix.target, 'linux') && (contains(matrix.target, 'aarch64') && 'ubuntu20' || 'ubuntu24') || '' }}
+          # release: ${{ contains(matrix.target, 'linux') && (contains(matrix.target, 'aarch64') && 'ubuntu20' || 'ubuntu24') || '' }}
+          release: ${{ contains(matrix.target, 'linux') && 'ubuntu20' || '' }}
 
       - name: Ubuntu GCC 11 setup
         if: contains(matrix.runs-on, 'ubuntu-24')
