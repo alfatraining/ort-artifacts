@@ -1,3 +1,60 @@
+diff --git a/onnxruntime/core/providers/openvino/openvino_provider_factory.cc b/onnxruntime/core/providers/openvino/openvino_provider_factory.cc
+index 1a10d9849..9e74c27b8 100644
+--- a/onnxruntime/core/providers/openvino/openvino_provider_factory.cc
++++ b/onnxruntime/core/providers/openvino/openvino_provider_factory.cc
+@@ -117,8 +117,10 @@ std::string ParseDeviceType(std::shared_ptr<OVCore> ov_core, const ProviderOptio
+     luid_list = split(luid_str, ',');
+   }
+ 
++  std::vector<std::string> selected_devices;
+   for (auto device : devices_to_check) {
+-    bool device_found = false;
++    // bool device_found = false;
++    const auto full_device_name = device;
+     // Check deprecated device format (CPU_FP32, GPU.0_FP16, etc.) and remove the suffix in place
+     // Suffix will be parsed in ParsePrecision
+     if (auto delimit = device.find("_"); delimit != std::string::npos) {
+@@ -134,9 +136,13 @@ std::string ParseDeviceType(std::shared_ptr<OVCore> ov_core, const ProviderOptio
+         std::vector<std::string> available_devices = ov_core->GetAvailableDevices(device_prefix);
+         // Here we need to find the full device name (with .idx, but without _precision)
+         if (std::find(std::begin(available_devices), std::end(available_devices), device) != std::end(available_devices))
+-          device_found = true;
+-        if (!device_found) {
+-          ORT_THROW("[ERROR] [OpenVINO] Device ", device, " is not available");
++        {
++          // device_found = true;
++          selected_devices.push_back(full_device_name);
++        }
++        else {
++          // ORT_THROW("[ERROR] [OpenVINO] Device ", device, " is not available");
++          continue;
+         }
+         if (device_prefix != "CPU" && luid_list.size() > 0) {
+           for (const auto& dev : available_devices) {
+@@ -180,8 +186,22 @@ std::string ParseDeviceType(std::shared_ptr<OVCore> ov_core, const ProviderOptio
+       selected_device = std::move(ov_luid_devices);
+     }
+   }
++  else
++  {
++    selected_device.clear();
++    for(const auto &dev : selected_devices)
++    {
++      if(!selected_device.empty()) selected_device += ",";
++      selected_device += dev;
++    }
++
++    if(!device_mode.empty())
++    {
++      selected_device = device_mode + ":" + selected_device;
++    }
++  }
+ 
+-  LOGS_DEFAULT(INFO) << "[OpenVINO-EP] Choosing Device: " << selected_device;
++  LOGS_DEFAULT(ERROR) << "[OpenVINO-EP] Choosing Device: " << selected_device;
+   return selected_device;
+ }
+ 
 diff --git a/onnxruntime/core/providers/openvino/ov_factory.cc b/onnxruntime/core/providers/openvino/ov_factory.cc
 index 2853cc177..0dba8a331 100644
 --- a/onnxruntime/core/providers/openvino/ov_factory.cc
@@ -123,3 +180,54 @@ index 899845d48..dd0617eac 100644
  }
  
  uint32_t OVInferRequest::GetNumInputs() {
+diff --git a/onnxruntime/core/providers/openvino/qdq_transformations/qdq_scales_fix.cpp b/onnxruntime/core/providers/openvino/qdq_transformations/qdq_scales_fix.cpp
+index 3a39152b5..c094fee1e 100644
+--- a/onnxruntime/core/providers/openvino/qdq_transformations/qdq_scales_fix.cpp
++++ b/onnxruntime/core/providers/openvino/qdq_transformations/qdq_scales_fix.cpp
+@@ -269,18 +269,19 @@ struct GraphNode {
+       return (val.has_value()) ? print_bool(val.value()) : "None";
+     };
+ 
+-    auto string = std::format("node_name={} op_type={} scale_factor={:.2f} visited={} queued={} down_to_output={} processed={} from_node={} to_node={} node_input_name={} node_output_name={}",
+-                              node_name,
+-                              op_type,
+-                              scale_factor,
+-                              visited,
+-                              print_bool(queued),
+-                              print_opt_bool(down_to_output),
+-                              print_bool(processed),
+-                              from_node_str,
+-                              to_node_str,
+-                              node_input_name_str,
+-                              node_output_name_str);
++    char scale_factor_buf[32];
++    snprintf(scale_factor_buf, sizeof(scale_factor_buf), "%.2f", scale_factor);
++    auto string = std::string("node_name=") + node_name +
++                  " op_type=" + op_type +
++                  " scale_factor=" + scale_factor_buf +
++                  " visited=" + std::to_string(visited) +
++                  " queued=" + print_bool(queued) +
++                  " down_to_output=" + print_opt_bool(down_to_output) +
++                  " processed=" + print_bool(processed) +
++                  " from_node=" + from_node_str +
++                  " to_node=" + to_node_str +
++                  " node_input_name=" + node_input_name_str +
++                  " node_output_name=" + node_output_name_str;
+     return string;
+   }
+ 
+@@ -536,7 +537,13 @@ struct CustomGraph {
+ 
+       if (!found) {
+         // Connect the last valid node to the graph output
+-        for (auto node : std::ranges::reverse_view(original_graph.Nodes())) {
++        // Collect nodes into a vector to iterate in reverse
++        std::vector<const Node*> nodes_vec;
++        for (auto node : original_graph.Nodes()) {
++          nodes_vec.push_back(node);
++        }
++        for (auto it = nodes_vec.rbegin(); it != nodes_vec.rend(); ++it) {
++          auto node = *it;
+           if (!node->OutputDefs().empty()) {
+             const auto& name = (*node->OutputDefs().begin())->Name();
+             auto& node_arg = original_graph.GetOrCreateNodeArg(name, output->TypeAsProto());
