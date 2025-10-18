@@ -174,12 +174,13 @@ jobs:
           ./build.sh -r "${{ inputs.onnxruntime-ref }}" -b "${{ inputs.buildtype }}" ${{ matrix.args }}
 
       # See: https://github.com/microsoft/onnxruntime/issues/24911
-      - name: Remove executable stack flag
-        if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-x86_64-linux' || matrix.target == 'dylib-aarch64-linux' || matrix.target == 'dylib-aarch64-android')
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y patchelf
-          patchelf --clear-execstack build/artifact/onnxruntime/lib/libonnxruntime_sx${{ (inputs.buildtype == 'Debug') && 'd' || '' }}.so
+      # - name: Remove executable stack flag
+      #   if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-x86_64-linux' || matrix.target == 'dylib-aarch64-linux' || matrix.target == 'dylib-aarch64-android')
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y patchelf
+      #     # patchelf --clear-execstack build/artifact/onnxruntime/lib/libonnxruntime_sx${{ (inputs.buildtype == 'Debug') && 'd' || '' }}.so
+      #     execstack -c build/artifact/onnxruntime/lib/libonnxruntime_sx${{ (inputs.buildtype == 'Debug') && 'd' || '' }}.so
 
       - name: Fix OpenVINO linux rpath
         # NOTE: The version in the file path below must match the version for the `install-openvino-action` above
