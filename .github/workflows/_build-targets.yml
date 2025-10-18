@@ -36,16 +36,16 @@ jobs:
         include:
           - target: dylib-aarch64-linux
             args: "-A aarch64 --xnnpack -N --openvino"
-            runs-on: ubuntu-24.04
+            runs-on: ubuntu-22.04
           - target: static-aarch64-linux
             args: "--static -A aarch64 --xnnpack -N --openvino"
-            runs-on: ubuntu-24.04
+            runs-on: ubuntu-22.04
           - target: dylib-x86_64-linux
             args: "--xnnpack -N --openvino"
-            runs-on: ubuntu-24.04
+            runs-on: ubuntu-22.04
           - target: static-x86_64-linux
             args: "--static --xnnpack -N --openvino"
-            runs-on: ubuntu-24.04
+            runs-on: ubuntu-22.04
           - target: dylib-aarch64-macos
             args: "-A aarch64 --xnnpack -N"
             runs-on: macos-14
@@ -72,7 +72,7 @@ jobs:
             runs-on: windows-2025
           - target: wasm32-emscripten
             args: "-W --webgpu"
-            runs-on: ubuntu-24.04
+            runs-on: ubuntu-22.04
           - target: dylib-aarch64-ios
             args: "-A aarch64 --iphoneos --xnnpack --coreml -N"
             runs-on: macos-14
@@ -87,10 +87,10 @@ jobs:
             runs-on: macos-14
           - target: dylib-aarch64-android
             args: "--android -A aarch64 --xnnpack --nnapi -N"
-            runs-on: ubuntu-24.04
+            runs-on: ubuntu-22.04
           - target: static-aarch64-android
             args: "--static --android -A aarch64 --xnnpack --nnapi -N"
-            runs-on: ubuntu-24.04
+            runs-on: ubuntu-22.04
 
     steps:
       - name: Free Disk Space (Ubuntu)
