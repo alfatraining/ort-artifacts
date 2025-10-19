@@ -110,17 +110,17 @@ jobs:
           docker-images: true
           swap-storage: true
 
-      - name: Install cross-compile tools
+      - name: Install cross-compilation tools
         if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux')
         run: |
           # Install basic build tools
           sudo apt update && sudo apt install -y make ninja-build wget xz-utils
 
-          # Download and install ARM GNU Toolchain with GCC 14.3
-          wget -q https://developer.arm.com/-/media/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
+          # Download and install ARM GNU Toolchain with GCC 11.3
+          wget -q https://developer.arm.com/-/media/Files/downloads/gnu/11.3.rel1/binrel/arm-gnu-toolchain-11.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
           sudo mkdir -p /opt/linaro-toolchain
-          sudo tar -xf arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz -C /opt/linaro-toolchain --strip-components=1
-          rm arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
+          sudo tar -xf arm-gnu-toolchain-11.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz -C /opt/linaro-toolchain --strip-components=1
+          rm arm-gnu-toolchain-11.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
 
           # Add toolchain to PATH and create symlinks for compatibility
           echo "/opt/linaro-toolchain/bin" >> $GITHUB_PATH
