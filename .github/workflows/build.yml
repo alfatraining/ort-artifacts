@@ -44,6 +44,11 @@ on:
           - 'Both'
           - 'Release'
           - 'Debug'
+      publish:
+        type: boolean
+        description: "Publish as release on GitHub."
+        required: false
+        default: false
 
 env:
   GCC_VERSION: '11'
@@ -69,3 +74,10 @@ jobs:
       buildtype: Release
       target-preset: ${{ inputs.target-preset }}
       target-custom: ${{ inputs.target-custom }}
+
+  publish:
+    if: inputs.publish && always() && !cancelled() && !contains(needs.*.result, 'failure')
+    needs: [build-debug, build-release]
+    uses: ./.github/workflows/_publish.yml
+    with:
+      onnxruntime-ref: ${{ inputs.onnxruntime-ref }}

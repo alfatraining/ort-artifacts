@@ -1,0 +1,57 @@
+name: Publish
+
+on:
+  workflow_call:
+    inputs:
+      onnxruntime-ref:
+        type: string
+        description: "ONNX Runtime repository reference"
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set build info
+        id: build_info
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "sha_full=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "build_date=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
+          echo "repo_url=${{ github.server_url }}/${{ github.repository }}" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: artifacts
+
+      - name: List downloaded artifacts
+        run: ls -R artifacts
+
+      - name: Generate manifest
+        run: python3 .github/scripts/generate_manifest.py
+
+      - name: Publish artifacts as release
+        uses: softprops/action-gh-release@6da8fa9354ddfdc4aeace5fc48d7f679b5214090
+        with:
+          name: ort-${{ inputs.onnxruntime-ref }}-${{ steps.build_info.outputs.sha_short }}
+          body: |
+            ## ONNX Runtime ${{ inputs.onnxruntime-ref }}
+
+            Pre-built ONNX Runtime libraries for multiple platforms.
+
+            **Build Information:**
+            - ONNX Runtime: `${{ inputs.onnxruntime-ref }}`
+            - Build date: ${{ steps.build_info.outputs.build_date }}
+            - Triggered by: @${{ github.actor }}
+            - Source: [${{ steps.build_info.outputs.sha_short }}](${{ steps.build_info.outputs.repo_url }}/commit/${{ steps.build_info.outputs.sha_full }})
+
+            **Verification:**
+            Download `manifest.json` for SHA256 checksums and file locations.
+          draft: true
+          files: |
+            artifacts/**/*
+            manifest.json
