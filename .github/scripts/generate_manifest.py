@@ -47,13 +47,19 @@ def get_files_in_directory(files: List[str], directory: str) -> Set[str]:
 
 
 def find_onnxruntime_library(files: Set[str]) -> Optional[str]:
-    """Find the main ONNX Runtime library (contains _sx(d) or is libonnxruntime(d).a/onnxruntime(d).lib)."""
+    """Find the main ONNX Runtime library."""
     for f in files:
-        # Check for files with _sx(d) suffix.
-        if "_sx" in f and (f.endswith((".so", ".dll", ".dylib", ".a", ".lib")) or ".so." in f):
-            return f
-        # Check for static library names without _sx suffix.
-        if f in ("libonnxruntime.a", "libonnxruntimed.a", "onnxruntime.lib", "onnxruntimed.lib"):
+        if f in (
+            "onnxruntime_sx.dll",
+            "onnxruntime_sxd.dll",
+            "libonnxruntime_sx.so",
+            "libonnxruntime_sxd.so",
+            "libonnxruntime_sx.dylib",
+            "libonnxruntime_sxd.dylib",
+            "onnxruntime.lib",
+            "onnxruntimed.lib",
+            "libonnxruntime.a",
+            "libonnxruntimed.a"):
             return f
     return None
 
