@@ -160,6 +160,12 @@ jobs:
           sudo apt install gcc-11 g++-11
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 70 --slave /usr/bin/g++ g++ /usr/bin/g++-11 --slave /usr/bin/gcov gcov /usr/bin/gcov-11
 
+      - name: Install clang
+        if: contains(matrix.target, 'linux')
+        shell: bash
+        run: |
+          sudo apt install clang
+
       - name: Run build
         if: >
           (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) ||
@@ -168,6 +174,7 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           CMAKE_SYSROOT: ${{ (matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux') && '/opt/linaro-toolchain/aarch64-none-linux-gnu/libc' || '' }}
           CMAKE_FIND_ROOT_PATH: ${{ (matrix.target == 'dylib-aarch64-linux' || matrix.target == 'static-aarch64-linux') && '/opt/linaro-toolchain/aarch64-none-linux-gnu' || '' }}
+          TARGET_LINUX: ${{ contains(matrix.target, 'linux') && 'true' || 'false' }}
         shell: bash
         run: |
           ./build.sh -r "${{ inputs.onnxruntime-ref }}" -b "${{ inputs.buildtype }}" ${{ matrix.args }}

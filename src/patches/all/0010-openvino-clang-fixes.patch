@@ -1,0 +1,14 @@
+diff --git a/onnxruntime/core/providers/openvino/backends/basic_backend.h b/onnxruntime/core/providers/openvino/backends/basic_backend.h
+index 5c75a9ae1..5d628f3d9 100644
+--- a/onnxruntime/core/providers/openvino/backends/basic_backend.h
++++ b/onnxruntime/core/providers/openvino/backends/basic_backend.h
+@@ -61,7 +61,8 @@ struct OnnxToOvNetworkBindings {
+ 
+   OnnxToOvNetworkBindings(OVExeNetwork& exec_network, SubGraphContext& subgraph_context, SessionContext& session_context) {
+     auto populate = [&](auto& input_output_map, const SubGraphContext::string_index_map_t& onnx_input_map, const auto& ov_parameters) {
+-      for (const auto& [onnx_name, onnx_param_index] : onnx_input_map) {
++      for (const auto& [onnx_name_cap, onnx_param_index] : onnx_input_map) {
++        const auto onnx_name = onnx_name_cap;
+         auto it = std::find_if(ov_parameters.begin(), ov_parameters.end(),
+                                [&onnx_name](const auto& ov_parameter_info) { return ov_parameter_info.get_names().contains(onnx_name); });
+         bool matched_names = it != ov_parameters.end();

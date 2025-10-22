@@ -180,6 +180,19 @@ index 899845d48..dd0617eac 100644
  }
  
  uint32_t OVInferRequest::GetNumInputs() {
+diff --git a/onnxruntime/core/providers/openvino/ov_interface.h b/onnxruntime/core/providers/openvino/ov_interface.h
+index 38ea88307..f333d1eca 100644
+--- a/onnxruntime/core/providers/openvino/ov_interface.h
++++ b/onnxruntime/core/providers/openvino/ov_interface.h
+@@ -19,6 +19,8 @@
+ #include "openvino/core/dimension.hpp"
+ #include "openvino/core/partial_shape.hpp"
+ 
++#include "core/common/common.h"
++
+ #include <string>
+ 
+ namespace onnxruntime {
 diff --git a/onnxruntime/core/providers/openvino/qdq_transformations/qdq_scales_fix.cpp b/onnxruntime/core/providers/openvino/qdq_transformations/qdq_scales_fix.cpp
 index 3a39152b5..c094fee1e 100644
 --- a/onnxruntime/core/providers/openvino/qdq_transformations/qdq_scales_fix.cpp

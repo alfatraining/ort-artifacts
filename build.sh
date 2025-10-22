@@ -255,6 +255,7 @@ fi
 CMAKE_ARGS=(
 	"-S" "."
 	"-B" "build"
+	"--compile-no-warning-as-error"
 	"-DREFERENCE=$REFERENCE"
 	"-DSTATIC_BUILD=$STATIC_BUILD"
 	# "-DUSE_NINJA=$USE_NINJA"
@@ -276,6 +277,17 @@ CMAKE_ARGS=(
 	"-DUSE_NNAPI=$USE_NNAPI"
 	"${GENERATOR_ARGS[@]}"
 )
+
+if [[ "${TARGET_LINUX:-}" == "true" ]]; then
+	export CC=clang
+	export CXX=clang++
+	export CFLAGS="-Wno-unused-parameter -Wno-everything -Wno-all -static-libstdc++ -static-libgcc"
+	export CXXFLAGS="${CFLAGS}"
+	CMAKE_ARGS+=(
+		"-DCMAKE_CXX_COMPILER=clang++"
+		"-DCMAKE_C_COMPILER=clang"
+	)
+fi
 
 # assemble the final command line -  Windows/ninja builds need a VS environment
 if [[ "$IS_WINDOWS" == "true" && "$USE_NINJA" == "ON" ]]; then

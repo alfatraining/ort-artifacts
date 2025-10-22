@@ -275,6 +275,18 @@ if(USE_NNAPI AND ANDROID)
     list(APPEND CMAKE_ARGS -Donnxruntime_USE_NNAPI_BUILTIN=ON)
 endif()
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # list(APPEND CMAKE_C_FLAGS "-static")
+    # list(APPEND CMAKE_C_FLAGS "-Wno-unused-parameter")
+    # list(APPEND CMAKE_CXX_FLAGS "-static")
+    # list(APPEND CMAKE_CXX_FLAGS "-Wno-unused-parameter")
+
+    # list(APPEND CMAKE_ARGS "-DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}")
+    # list(APPEND CMAKE_ARGS "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}")
+
+    list(APPEND CMAKE_ARGS "--compile-no-warning-as-error")
+endif()
+
 # WebAssembly special case handling
 if(WASM)
     set(WEBGPU_ARG "")
