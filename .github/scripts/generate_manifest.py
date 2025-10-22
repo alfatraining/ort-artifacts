@@ -112,7 +112,7 @@ def process_artifact(archive_path: Path) -> Optional[Dict]:
     extra_files = get_extra_files(lib_files, ort_library)
 
     return {
-        "file": archive_path.stem + ".zip",
+        "archive": archive_path.stem + ".zip",
         "sha256": sha256,
         "dir": lib_dir,
         "ort_lib": ort_library,
