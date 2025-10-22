@@ -208,10 +208,12 @@ jobs:
         run: |
           if [[ "${{ matrix.target }}" == *windows* ]]; then
             pushd build/artifact
-            7z a -tzip $(dirs +1 -l)/onnxruntime.zip
+            7z a -tzip $(dirs +1 -l)/ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ inputs.buildtype }}.zip
             popd
           else
-            tar -czf onnxruntime.tar.gz -C build/artifact .
+            pushd build/artifact
+            zip -y -r $(dirs +1 -l)/ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ inputs.buildtype }}.zip .
+            popd
           fi
         shell: bash
 
@@ -220,5 +222,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ inputs.buildtype }}
-          path: ${{ contains(matrix.target, 'windows') && 'onnxruntime.zip' || 'onnxruntime.tar.gz' }}
+          path: 'ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ inputs.buildtype }}.zip'
           if-no-files-found: error
