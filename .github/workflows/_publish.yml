@@ -52,7 +52,7 @@ jobs:
             - GitHub Actions job: [${{ steps.build_info.outputs.job_url }}](${{ steps.build_info.outputs.job_url }})
 
             Download `manifest.json` for SHA256 checksums and file locations.
-          draft: true
+          prerelease: true
           files: |
             artifacts/**/*
             manifest.json
