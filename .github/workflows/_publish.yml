@@ -42,7 +42,7 @@ jobs:
           body: |
             ## ONNX Runtime ${{ inputs.onnxruntime-ref }}
 
-            Pre-built ONNX Runtime libraries for multiple platforms.
+            Pre-built ONNX Runtime libraries for various platforms.
 
             **Build Information:**
             - ONNX Runtime: `${{ inputs.onnxruntime-ref }}`
