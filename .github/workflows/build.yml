@@ -46,7 +46,7 @@ on:
           - 'Debug'
       publish:
         type: boolean
-        description: "Publish as prerelease on GitHub."
+        description: "Publish as draft release on GitHub."
         required: false
         default: false
 
