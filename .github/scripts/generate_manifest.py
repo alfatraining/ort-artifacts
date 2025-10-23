@@ -7,6 +7,25 @@ import zipfile
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
+# Constants
+LIBRARY_DIRECTORIES = ["onnxruntime/bin", "onnxruntime/lib"]
+
+ONNXRUNTIME_LIBRARY_NAMES = {
+    "onnxruntime_sx.dll",
+    "onnxruntime_sxd.dll",
+    "libonnxruntime_sx.so",
+    "libonnxruntime_sxd.so",
+    "libonnxruntime_sx.dylib",
+    "libonnxruntime_sxd.dylib",
+    "onnxruntime.lib",
+    "onnxruntimed.lib",
+    "libonnxruntime.a",
+    "libonnxruntimed.a",
+}
+
+EXTRA_FILE_EXTENSIONS = (".dll", ".so", ".dylib", ".pdb")
+
+
 def calculate_sha256(file_path: Path) -> str:
     """Calculate SHA256 hash of a file."""
     sha256_hash = hashlib.sha256()
@@ -22,108 +41,93 @@ def get_archive_files(archive_path: Path) -> List[str]:
         return zf.namelist()
 
 
-def find_lib_directory(files: List[str]) -> Optional[str]:
-    """Find the library directory in the archive (bin or lib)."""
-    # Check for bin directory first.
-    if any(f.startswith("onnxruntime/bin/") for f in files):
-        return "onnxruntime/bin"
-    # Fallback to lib directory.
-    if any(f.startswith("onnxruntime/lib/") for f in files):
-        return "onnxruntime/lib"
-    return None
+def find_lib_directories(files: List[str]) -> List[str]:
+    """Find all library directories present in the archive."""
+    return [
+        lib_dir
+        for lib_dir in LIBRARY_DIRECTORIES
+        if any(f.startswith(f"{lib_dir}/") for f in files)
+    ]
 
 
-def get_files_in_directory(files: List[str], directory: str) -> Set[str]:
-    """Get all files in a specific directory from the archive."""
-    dir_prefix = directory + "/"
+def get_files_in_directories(files: List[str], directories: List[str]) -> Set[str]:
+    """Get all files from specified directories with full relative paths.
+
+    Only includes files directly in the directories (not subdirectories).
+    """
     result = set()
-    for f in files:
-        if f.startswith(dir_prefix):
-            relative = f[len(dir_prefix):]
-            # Only files directly in the directory (not subdirectories).
-            if relative and "/" not in relative:
-                result.add(relative)
+    for directory in directories:
+        dir_prefix = f"{directory}/"
+        for f in files:
+            if f.startswith(dir_prefix):
+                relative = f[len(dir_prefix):]
+                if relative and "/" not in relative:
+                    result.add(f)
     return result
 
 
 def find_onnxruntime_library(files: Set[str]) -> Optional[str]:
-    """Find the main ONNX Runtime library."""
+    """Find the main ONNX Runtime library by checking file basenames."""
     for f in files:
-        if f in (
-            "onnxruntime_sx.dll",
-            "onnxruntime_sxd.dll",
-            "libonnxruntime_sx.so",
-            "libonnxruntime_sxd.so",
-            "libonnxruntime_sx.dylib",
-            "libonnxruntime_sxd.dylib",
-            "onnxruntime.lib",
-            "onnxruntimed.lib",
-            "libonnxruntime.a",
-            "libonnxruntimed.a"):
+        basename = Path(f).name
+        if basename in ONNXRUNTIME_LIBRARY_NAMES:
             return f
     return None
 
 
 def get_extra_files(files: Set[str], ort_library: str) -> List[str]:
-    """Get all extra library files except the main ONNX Runtime library."""
-    extensions = (".dll", ".so", ".dylib", ".pdb")
+    """Get all extra library files (DLLs, shared libraries, PDBs) except main library."""
     extra = []
-
     for f in files:
-        # Skip the main onnxruntime library.
         if f == ort_library:
             continue
-
-        # Include files with extensions or symlinks (files with .so. pattern).
-        if f.endswith(extensions) or ".so." in f:
+        # Include files with library extensions or .so version symlinks
+        if f.endswith(EXTRA_FILE_EXTENSIONS) or ".so." in f:
             extra.append(f)
-
     return sorted(extra)
 
 
 def process_artifact(archive_path: Path) -> Optional[Dict]:
     """Process a single artifact archive and extract metadata."""
-    # Calculate SHA256.
     sha256 = calculate_sha256(archive_path)
 
-    # Get archive contents.
     try:
         files = get_archive_files(archive_path)
-    except Exception as e:
+    except (zipfile.BadZipFile, OSError) as e:
         print(f"Error reading archive {archive_path}: {e}")
         return None
 
-    # Find library directory.
-    lib_dir = find_lib_directory(files)
-    if not lib_dir:
-        print(f"Warning: No onnxruntime/bin or onnxruntime/lib found in {archive_path}")
+    lib_dirs = find_lib_directories(files)
+    if not lib_dirs:
+        print(f"Warning: No library directories found in {archive_path}")
         return None
 
-    # Get files in the library directory.
-    lib_files = get_files_in_directory(files, lib_dir)
+    lib_files = get_files_in_directories(files, lib_dirs)
+    if not lib_files:
+        print(f"Warning: No library files found in {archive_path}")
+        return None
 
-    # Find main ONNX Runtime library.
     ort_library = find_onnxruntime_library(lib_files)
     if not ort_library:
         print(f"Warning: No ONNX Runtime library found in {archive_path}")
         return None
 
-    # Get extra files.
     extra_files = get_extra_files(lib_files, ort_library)
 
     return {
-        "archive": archive_path.stem + ".zip",
+        "archive": f"{archive_path.stem}.zip",
         "sha256": sha256,
-        "dir": lib_dir,
         "ort_lib": ort_library,
-        "extra_files": extra_files
+        "extra_files": extra_files,
     }
 
 
 def strip_version_prefix(artifact_name: str) -> str:
-    """Strip 'ort-<version>-' prefix from artifact name."""
-    # Artifact names follow pattern: ort-<version>-<target>-<buildtype>.
-    # Remove first two parts (ort and version).
+    """Strip 'ort-<version>-' prefix from artifact name.
+
+    Artifact names follow pattern: ort-<version>-<target>-<buildtype>
+    Returns: <target>-<buildtype>
+    """
     parts = artifact_name.split("-", 2)
     if len(parts) >= 3 and parts[0] == "ort":
         return parts[2]
@@ -131,9 +135,8 @@ def strip_version_prefix(artifact_name: str) -> str:
 
 
 def find_archives(artifacts_dir: Path) -> List[Path]:
-    """Find all archive files in the artifacts directory."""
-    # Find .zip files in artifacts/ and artifacts/*/.
-    return list(artifacts_dir.glob("*.zip")) + list(artifacts_dir.glob("*/*.zip"))
+    """Find all ZIP archives in artifacts directory and subdirectories."""
+    return sorted(artifacts_dir.glob("**/*.zip"))
 
 
 def main():
@@ -144,23 +147,19 @@ def main():
         print("Error: artifacts/ directory not found")
         return
 
-    # Find all archives.
     archives = find_archives(artifacts_dir)
-
     if not archives:
         print("Warning: No archives found in artifacts/")
         return
 
-    # Process each archive.
     manifest = {}
-    for archive in sorted(archives):
+    for archive in archives:
         print(f"Processing {archive}...")
         metadata = process_artifact(archive)
         if metadata:
             artifact_name = strip_version_prefix(archive.stem).lower()
             manifest[artifact_name] = metadata
 
-    # Write manifest.
     manifest_path = Path("manifest.json")
     with open(manifest_path, "w") as f:
         json.dump(manifest, f, indent=2)
