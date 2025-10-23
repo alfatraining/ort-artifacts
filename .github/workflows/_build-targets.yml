@@ -204,6 +204,7 @@ jobs:
 
       - name: Lowercase buildtype
         id: lower-buildtype
+        shell: bash
         run: |
           LOWER=$(echo "${{ inputs.buildtype }}" | tr '[:upper:]' '[:lower:]')
           echo "string=${LOWER}" >> $GITHUB_OUTPUT
