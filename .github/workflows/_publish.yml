@@ -22,6 +22,7 @@ jobs:
           echo "sha_full=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
           echo "build_date=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
           echo "repo_url=${{ github.server_url }}/${{ github.repository }}" >> $GITHUB_OUTPUT
+          echo "job_url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}" >> $GITHUB_OUTPUT
 
       - name: Download all artifacts
         uses: actions/download-artifact@v5
@@ -48,6 +49,7 @@ jobs:
             - Build date: ${{ steps.build_info.outputs.build_date }}
             - Triggered by: @${{ github.actor }}
             - Source: [${{ steps.build_info.outputs.sha_short }}](${{ steps.build_info.outputs.repo_url }}/commit/${{ steps.build_info.outputs.sha_full }})
+            - GitHub Actions job: [${{ steps.build_info.outputs.job_url }}](${{ steps.build_info.outputs.job_url }})
 
             Download `manifest.json` for SHA256 checksums and file locations.
           draft: true
