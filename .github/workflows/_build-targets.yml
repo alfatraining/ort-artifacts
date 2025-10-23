@@ -215,7 +215,7 @@ jobs:
         run: |
           if [[ "${{ matrix.target }}" == *windows* ]]; then
             pushd build/artifact
-            7z a -tzip $(dirs +1 -l)/ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ steps.lower-buildtype.outputs.string }}".zip
+            7z a -tzip $(dirs +1 -l)/ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ steps.lower-buildtype.outputs.string }}.zip
             popd
           else
             pushd build/artifact
