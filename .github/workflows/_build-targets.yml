@@ -202,17 +202,23 @@ jobs:
           sudo apt-get install -y patchelf
           patchelf --set-rpath '$ORIGIN' build/artifact/onnxruntime/lib/libopenvino.so.2025.2.0
 
+      - name: Lowercase buildtype
+        id: lower-buildtype
+        run: |
+          LOWER=$(echo "${{ inputs.buildtype }}" | tr '[:upper:]' '[:lower:]')
+          echo "string=${LOWER}" >> $GITHUB_OUTPUT
+
       # Create archive based on target OS
       - name: Create artifact (.zip or .tar.gz)
         if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
         run: |
           if [[ "${{ matrix.target }}" == *windows* ]]; then
             pushd build/artifact
-            7z a -tzip $(dirs +1 -l)/ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ inputs.buildtype }}.zip
+            7z a -tzip $(dirs +1 -l)/ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ steps.lower-buildtype.outputs.string }}".zip
             popd
           else
             pushd build/artifact
-            zip -y -r $(dirs +1 -l)/ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ inputs.buildtype }}.zip .
+            zip -y -r $(dirs +1 -l)/ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ steps.lower-buildtype.outputs.string }}.zip .
             popd
           fi
         shell: bash
@@ -221,6 +227,6 @@ jobs:
         if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
         uses: actions/upload-artifact@v4
         with:
-          name: ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ inputs.buildtype }}
-          path: 'ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ inputs.buildtype }}.zip'
+          name: ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ steps.lower-buildtype.outputs.string }}
+          path: 'ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ steps.lower-buildtype.outputs.string }}.zip'
           if-no-files-found: error
