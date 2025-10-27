@@ -1,4 +1,4 @@
-name: Build
+name: CD
 on:
   workflow_dispatch:
     inputs:
@@ -59,7 +59,7 @@ env:
 jobs:
   build-debug:
     if: inputs.buildtype == 'Both' || inputs.buildtype == 'Debug'
-    uses: ./.github/workflows/_build-targets.yml
+    uses: ./.github/workflows/_build.yml
     with:
       onnxruntime-ref: ${{ inputs.onnxruntime-ref }}
       buildtype: Debug
@@ -68,7 +68,7 @@ jobs:
 
   build-release:
     if: inputs.buildtype == 'Both' || inputs.buildtype == 'Release'
-    uses: ./.github/workflows/_build-targets.yml
+    uses: ./.github/workflows/_build.yml
     with:
       onnxruntime-ref: ${{ inputs.onnxruntime-ref }}
       buildtype: Release
