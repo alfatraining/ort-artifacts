@@ -1,6 +1,8 @@
 import argparse
 import os
+import stat
 import tarfile
+import time
 import zipfile
 from collections.abc import Callable, Iterable
 from fnmatch import fnmatch
@@ -19,6 +21,29 @@ from tqdm import tqdm
 
 PredicateFn: TypeAlias = Callable[..., bool]
 GH_ACCESS_TOKEN = os.environ.get("FETCH_GH_ACCESS_TOKEN")
+
+
+def retry_on_permission_error(max_attempts=5, initial_delay=0.1):
+    """
+    Retry decorator for file operations that may fail due to transient Windows file locks.
+    Uses exponential backoff to handle PermissionError caused by antivirus, indexer, etc.
+    """
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            delay = initial_delay
+            for attempt in range(max_attempts):
+                try:
+                    return func(*args, **kwargs)
+                except (PermissionError, OSError):
+                    if attempt == max_attempts - 1:
+                        # Last attempt failed, re-raise the exception
+                        raise
+                    # Wait with exponential backoff before retrying
+                    time.sleep(delay)
+                    delay *= 2
+            return None  # Should never reach here
+        return wrapper
+    return decorator
 
 
 def find_first_if(iter: Iterable, pred: PredicateFn, default: Any = None):
@@ -88,8 +113,42 @@ def unpack_and_delete_archive(file_path: Path, dest_dir: Optional[Path] = None) 
         tf.extractall(dest_dir, filter="fully_trusted")
 
     def unzip():
-        zf = zipfile.ZipFile(file_path, mode="r")
-        zf.extractall(dest_dir)
+        with zipfile.ZipFile(file_path, mode="r") as zf:
+            for info in zf.infolist():
+                target_path = dest_dir / info.filename
+
+                # Get Unix file attributes (permissions and file type)
+                attr = info.external_attr >> 16
+
+                # Check if this is a symbolic link
+                if stat.S_ISLNK(attr):
+                    # Extract symbolic link
+                    link_target = zf.read(info.filename).decode('utf-8')
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+
+                    try:
+                        # Create the symlink
+                        if os.name == 'nt':
+                            # Windows needs to know if target is a directory
+                            is_dir = link_target.endswith('/') or link_target.endswith('\\')
+                            os.symlink(link_target, target_path, target_is_directory=is_dir)
+                        else:
+                            os.symlink(link_target, target_path)
+                    except OSError:
+                        # Fallback for Windows without admin/dev mode:
+                        # Create regular file (preserves current behavior)
+                        target_path.write_text(link_target)
+                else:
+                    # Extract regular file or directory
+                    zf.extract(info, dest_dir)
+
+                    # Apply permissions if stored (works on Unix/Linux/macOS)
+                    if attr != 0:
+                        try:
+                            os.chmod(target_path, attr)
+                        except OSError:
+                            # Permissions may fail on some filesystems
+                            pass
 
     if tarfile.is_tarfile(file_path):
         ok = untar()
@@ -125,10 +184,18 @@ def download_and_unpack_artifact(
     # into the root artifact directory and delete the (now empty) directory
     entries = list(dl_dir_path.iterdir())
     if (len(entries) == 1) and entries[0].is_dir():
-        for subentry in entries[0].iterdir():
-            subentry.rename(dl_dir_path / subentry.name)
+        for subentry in list(entries[0].iterdir()):
+            # Wrap rename in retry logic to handle Windows file locks
+            @retry_on_permission_error()
+            def move_entry():
+                subentry.rename(dl_dir_path / subentry.name)
+            move_entry()
 
-        entries[0].rmdir()
+        # Wrap rmdir in retry logic to handle Windows file locks
+        @retry_on_permission_error()
+        def remove_dir():
+            entries[0].rmdir()
+        remove_dir()
 
     return dl_dir_path
 
@@ -195,7 +262,7 @@ def main():
         description="Download and extract ONNXRuntime artifacts from our GitHub build workflow jobs"
     )
     parser.add_argument(
-        "-b", "--branch", default="dropjs", help="GitHub branch name (default: dropjs)"
+        "-b", "--branch", default="main", help="GitHub branch name (default: main)"
     )
     parser.add_argument(
         "-r",
@@ -220,8 +287,7 @@ def main():
     # exit()
 
     repo = gh.get_repo("alfatraining/ort-artifacts")
-    branch = repo.get_branch("dropjs")
-    # wf_runs = repo.get_workflow_runs(branch=b, status="completed")
+    branch = repo.get_branch(args.branch)
 
     target_run: Optional[WorkflowRun] = None
     if args.run:
