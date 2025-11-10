@@ -47,16 +47,16 @@ jobs:
             args: "--static --xnnpack -N --openvino"
             runs-on: ubuntu-22.04
           - target: macos-aarch64-dylib
-            args: "-A aarch64 --xnnpack -N"
+            args: "-A aarch64 --xnnpack --coreml -N"
             runs-on: macos-14
           - target: macos-aarch64-static
-            args: "--static -A aarch64 --xnnpack -N"
+            args: "--static -A aarch64 --xnnpack --coreml -N"
             runs-on: macos-14
           - target: macos-x86_64-dylib
-            args: "--xnnpack -N"
+            args: "--xnnpack --coreml -N"
             runs-on: macos-14
           - target: macos-x86_64-static
-            args: "--static --xnnpack -N"
+            args: "--static --xnnpack --coreml -N"
             runs-on: macos-14
           - target: windows-md-x86_64-dylib
             args: "--directml --xnnpack --openvino -N"
