@@ -181,7 +181,7 @@ endif()
 # Windows configuration
 if(PLATFORM_WIN32)
     # Windows-specific compiler flags
-    set(COMPILER_FLAGS "_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR")
+    list(APPEND COMPILER_FLAGS "_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR")
 
     # ARM64 cross-compilation on Windows
     if(TARGET_ARCH STREQUAL "aarch64")
@@ -207,13 +207,6 @@ if(PLATFORM_WIN32)
             -DABSL_MSVC_STATIC_RUNTIME=OFF
         )
     endif()
-
-    # Add compiler flags if any
-    if(COMPILER_FLAGS)
-        string(REPLACE ";" " -D" COMPILER_FLAGS_STR "-D${COMPILER_FLAGS}")
-        list(APPEND CMAKE_ARGS -DCMAKE_C_FLAGS=${COMPILER_FLAGS_STR})
-        list(APPEND CMAKE_ARGS -DCMAKE_CXX_FLAGS=${COMPILER_FLAGS_STR})
-    endif()
 endif()
 
 # Execution Provider configuration
@@ -227,6 +220,10 @@ endif()
 
 if(USE_XNNPACK)
     list(APPEND CMAKE_ARGS -Donnxruntime_USE_XNNPACK=ON)
+    # Avoid log spamming due to: https://github.com/google/XNNPACK/blob/3cf85e705098622d59056dcb8f5f963ea7bb0a00/CMakeLists.txt#L1077
+    if((CMAKE_BUILD_TYPE MATCHES "Debug") OR ("Debug" IN_LIST CMAKE_CONFIGURATION_TYPES))
+        list(APPEND COMPILER_FLAGS "XNN_LOG_LEVEL=3")
+    endif()
 endif()
 
 if(USE_WEBGPU)
@@ -286,6 +283,13 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # list(APPEND CMAKE_ARGS "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}")
 
     list(APPEND CMAKE_ARGS "--compile-no-warning-as-error")
+endif()
+
+# Add compiler flags if any
+if(COMPILER_FLAGS)
+    string(REPLACE ";" " -D" COMPILER_FLAGS_STR "-D${COMPILER_FLAGS}")
+    list(APPEND CMAKE_ARGS -DCMAKE_C_FLAGS=${COMPILER_FLAGS_STR})
+    list(APPEND CMAKE_ARGS -DCMAKE_CXX_FLAGS=${COMPILER_FLAGS_STR})
 endif()
 
 # WebAssembly special case handling
