@@ -220,9 +220,9 @@ endif()
 
 if(USE_XNNPACK)
     list(APPEND CMAKE_ARGS -Donnxruntime_USE_XNNPACK=ON)
-    # Avoid log spamming due to: https://github.com/google/XNNPACK/blob/3cf85e705098622d59056dcb8f5f963ea7bb0a00/CMakeLists.txt#L1077
+    # Avoid log spamming in debug mode due to: https://github.com/google/XNNPACK/blob/3cf85e705098622d59056dcb8f5f963ea7bb0a00/CMakeLists.txt#L1077
     if((CMAKE_BUILD_TYPE MATCHES "Debug") OR ("Debug" IN_LIST CMAKE_CONFIGURATION_TYPES))
-        list(APPEND COMPILER_FLAGS "UXNN_LOG_LEVEL")
+        list(APPEND COMPILER_FLAGS "UXNN_LOG_LEVEL") # Unset log level 0.
         list(APPEND COMPILER_FLAGS "DXNN_LOG_LEVEL=3")
     endif()
 endif()
