@@ -1,5 +1,5 @@
 diff --git a/cmake/onnxruntime.cmake b/cmake/onnxruntime.cmake
-index 010696a61..d139faa75 100644
+index e1d9810..021f5f7 100644
 --- a/cmake/onnxruntime.cmake
 +++ b/cmake/onnxruntime.cmake
 @@ -142,8 +142,12 @@ if(onnxruntime_BUILD_SHARED_LIB)
@@ -16,9 +16,12 @@ index 010696a61..d139faa75 100644
  
    if(UNIX)
      if (APPLE)
-@@ -289,7 +293,9 @@ if(NOT APPLE AND NOT WIN32)
+@@ -287,14 +291,16 @@ if(NOT APPLE AND NOT WIN32)
+   if(CMAKE_SYSTEM_NAME MATCHES "AIX")
+     set_target_properties(onnxruntime PROPERTIES
        PUBLIC_HEADER "${ONNXRUNTIME_PUBLIC_HEADERS}"
-       VERSION ${ORT_VERSION}
+-      VERSION ${ORT_VERSION}
++      # VERSION ${ORT_VERSION}
        SOVERSION 1
 -      FOLDER "ONNXRuntime")
 +      FOLDER "ONNXRuntime"
@@ -27,8 +30,23 @@ index 010696a61..d139faa75 100644
    else()
      set_target_properties(onnxruntime PROPERTIES
        PUBLIC_HEADER "${ONNXRUNTIME_PUBLIC_HEADERS}"
+       LINK_DEPENDS ${SYMBOL_FILE}
+-      VERSION ${ORT_VERSION}
++      # VERSION ${ORT_VERSION}
+       SOVERSION 1
+       FOLDER "ONNXRuntime")
+   endif()
+@@ -303,7 +309,7 @@ else()
+   set_target_properties(onnxruntime PROPERTIES
+     PUBLIC_HEADER "${ONNXRUNTIME_PUBLIC_HEADERS}"
+     LINK_DEPENDS ${SYMBOL_FILE}
+-    VERSION ${ORT_VERSION}
++    # VERSION ${ORT_VERSION}
+     FOLDER "ONNXRuntime")
+ endif()
+ install(TARGETS onnxruntime
 diff --git a/onnxruntime/core/session/provider_bridge_ort.cc b/onnxruntime/core/session/provider_bridge_ort.cc
-index 41cf8be1d..a4ed4dece 100644
+index 19c636b..075ceff 100644
 --- a/onnxruntime/core/session/provider_bridge_ort.cc
 +++ b/onnxruntime/core/session/provider_bridge_ort.cc
 @@ -125,14 +125,26 @@ using EtwRegistrationManager_EtwInternalCallback = EtwRegistrationManager::EtwIn
