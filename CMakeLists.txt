@@ -38,7 +38,7 @@ option(USE_NNAPI "Enable NNAPI EP" OFF)
 option(FORCE_UPDATE "Force update of ONNX Runtime repository (re-clone)" OFF)
 
 # Constants from build.ts
-set(MACOS_DEPLOYMENT_TARGET "13.0")
+set(MACOS_DEPLOYMENT_TARGET "13.3")
 set(IPHONE_DEPLOYMENT_TARGET "16.0")
 
 # Platform detection
