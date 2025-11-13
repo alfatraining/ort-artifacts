@@ -1,5 +1,5 @@
 diff --git a/cmake/onnxruntime.cmake b/cmake/onnxruntime.cmake
-index e1d9810..021f5f7 100644
+index e1d9810..8ee6a16 100644
 --- a/cmake/onnxruntime.cmake
 +++ b/cmake/onnxruntime.cmake
 @@ -142,8 +142,12 @@ if(onnxruntime_BUILD_SHARED_LIB)
@@ -16,27 +16,29 @@ index e1d9810..021f5f7 100644
  
    if(UNIX)
      if (APPLE)
-@@ -287,14 +291,16 @@ if(NOT APPLE AND NOT WIN32)
+@@ -287,15 +291,16 @@ if(NOT APPLE AND NOT WIN32)
    if(CMAKE_SYSTEM_NAME MATCHES "AIX")
      set_target_properties(onnxruntime PROPERTIES
        PUBLIC_HEADER "${ONNXRUNTIME_PUBLIC_HEADERS}"
 -      VERSION ${ORT_VERSION}
-+      # VERSION ${ORT_VERSION}
-       SOVERSION 1
+-      SOVERSION 1
 -      FOLDER "ONNXRuntime")
++      # VERSION ${ORT_VERSION}
++      # SOVERSION 1
 +      FOLDER "ONNXRuntime"
-+      NO_SONAME 1 # AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 +    )
    else()
      set_target_properties(onnxruntime PROPERTIES
        PUBLIC_HEADER "${ONNXRUNTIME_PUBLIC_HEADERS}"
        LINK_DEPENDS ${SYMBOL_FILE}
 -      VERSION ${ORT_VERSION}
+-      SOVERSION 1
 +      # VERSION ${ORT_VERSION}
-       SOVERSION 1
++      # SOVERSION 1
        FOLDER "ONNXRuntime")
    endif()
-@@ -303,7 +309,7 @@ else()
+ else()
+@@ -303,7 +308,7 @@ else()
    set_target_properties(onnxruntime PROPERTIES
      PUBLIC_HEADER "${ONNXRUNTIME_PUBLIC_HEADERS}"
      LINK_DEPENDS ${SYMBOL_FILE}
