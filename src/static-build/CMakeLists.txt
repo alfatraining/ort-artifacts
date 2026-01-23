@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.26)
 project(onnxruntime_static_lib)
 
+# Ensure debug postfix is set for debug builds (may be passed from parent, but set default)
+if(NOT DEFINED CMAKE_DEBUG_POSTFIX)
+    set(CMAKE_DEBUG_POSTFIX "d")
+endif()
+
 set(onnxruntime_BUILD_SHARED_LIB ON)
 
 add_definitions(-D_SILENCE_ALL_CXX23_DEPRECATION_WARNINGS)
@@ -185,7 +190,8 @@ if(onnxruntime_USE_DML)
     install(
         FILES
             "$<TARGET_FILE_DIR:onnxruntime_providers_dml>/DirectML$<$<CONFIG:Debug>:.Debug>.dll"
-            "$<TARGET_FILE_DIR:onnxruntime_providers_dml>/DirectML$<$<CONFIG:Debug>:.Debug>.pdb"
+            # "$<TARGET_FILE_DIR:onnxruntime_providers_dml>/DirectML$<$<CONFIG:Debug>:.Debug>.pdb"
+            "$<$<CONFIG:Debug>:$<TARGET_FILE_DIR:onnxruntime_providers_dml>/DirectML.Debug.pdb>"
         TYPE BIN)
 endif()
 if(onnxruntime_USE_OPENVINO)

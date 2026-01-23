@@ -13,6 +13,14 @@ option(STATIC_BUILD "Build static library" OFF)
 set(TARGET_ARCH "x86_64" CACHE STRING "Target architecture")
 set_property(CACHE TARGET_ARCH PROPERTY STRINGS x86_64 aarch64)
 
+# Check for ORT_INSTALL_DIR environment variable, fall back to default
+if(DEFINED ENV{ORT_INSTALL_DIR})
+    set(ARTIFACT_DIR_DEFAULT "$ENV{ORT_INSTALL_DIR}/onnxruntime")
+else()
+    set(ARTIFACT_DIR_DEFAULT "${CMAKE_CURRENT_BINARY_DIR}/install/onnxruntime")
+endif()
+set(ARTIFACT_DIR "${ARTIFACT_DIR_DEFAULT}" CACHE PATH "Output directory for build artifacts")
+
 # Platform options
 option(IPHONEOS "Target iOS/iPadOS" OFF)
 option(IPHONESIMULATOR "Target iOS/iPadOS simulator" OFF)
@@ -34,11 +42,8 @@ option(USE_WEBGPU "Enable WebGPU EP" OFF)
 option(USE_OPENVINO "Enable OpenVINO EP" OFF)
 option(USE_NNAPI "Enable NNAPI EP" OFF)
 
-# Build optimization options
-option(FORCE_UPDATE "Force update of ONNX Runtime repository (re-clone)" OFF)
-
 # Constants from build.ts
-set(MACOS_DEPLOYMENT_TARGET "13.3")
+set(MACOS_DEPLOYMENT_TARGET "12.0")
 set(IPHONE_DEPLOYMENT_TARGET "16.0")
 
 # Platform detection
@@ -82,7 +87,10 @@ file(GLOB PATCH_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/patches/all/*.patch)
 list(SORT PATCH_FILES)
 set(PATCH_COMMAND "")
 foreach(PATCH_FILE ${PATCH_FILES})
-    list(APPEND PATCH_COMMAND COMMAND git apply ${PATCH_FILE} --ignore-whitespace --recount || true)
+    list(APPEND PATCH_COMMAND COMMAND
+        git apply ${PATCH_FILE} --ignore-whitespace --recount ||
+        git apply ${PATCH_FILE} --ignore-whitespace --recount --check -R
+    )
 endforeach()
 
 
@@ -101,7 +109,7 @@ string(REPLACE ";" "<|>" BUILD_CONFIGS "${CMAKE_CONFIGURATION_TYPES}")
 set(CMAKE_ARGS
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
     -DCMAKE_CONFIGURATION_TYPES=${BUILD_CONFIGS}
-    -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime
+    -DCMAKE_INSTALL_PREFIX=${ARTIFACT_DIR}
     -DCMAKE_DEBUG_POSTFIX=d
     -Donnxruntime_CLIENT_PACKAGE_BUILD=ON
     -Donnxruntime_USE_TELEMETRY=OFF
@@ -280,8 +288,10 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # list(APPEND CMAKE_CXX_FLAGS "-static")
     # list(APPEND CMAKE_CXX_FLAGS "-Wno-unused-parameter")
 
-    # list(APPEND CMAKE_ARGS "-DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}")
-    # list(APPEND CMAKE_ARGS "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}")
+	list(APPEND CMAKE_ARGS "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}")
+	list(APPEND CMAKE_ARGS "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}")
+    list(APPEND CMAKE_ARGS "-DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}")
+    list(APPEND CMAKE_ARGS "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}")
 
     list(APPEND CMAKE_ARGS "--compile-no-warning-as-error")
 endif()
@@ -309,9 +319,9 @@ if(WASM)
         CONFIGURE_COMMAND ""
         BUILD_COMMAND bash ./build.sh --config ${CMAKE_BUILD_TYPE} --build_wasm_static_lib --enable_wasm_simd --enable_wasm_threads --skip_tests --disable_wasm_exception_catching --disable_rtti --parallel ${WEBGPU_ARG} --emsdk_version ${EMSDK_VERSION}
         BUILD_IN_SOURCE ON
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime/lib
-                     && ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/build/Linux/${CMAKE_BUILD_TYPE}/libonnxruntime_webassembly.a ${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime/lib/libonnxruntime.a
-        INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E make_directory ${ARTIFACT_DIR}/lib
+                     && ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/build/Linux/${CMAKE_BUILD_TYPE}/libonnxruntime_webassembly.a ${ARTIFACT_DIR}/lib/libonnxruntime.a
+        INSTALL_DIR ${ARTIFACT_DIR}
     )
 else()
     ExternalProject_Add(onnxruntime
@@ -324,7 +334,7 @@ else()
         LIST_SEPARATOR "<|>"
         CMAKE_ARGS ${CMAKE_ARGS}
         # ${ORT_CMAKE_GENERATOR}
-        INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/artifact/onnxruntime
+        INSTALL_DIR ${ARTIFACT_DIR}
         CMAKE_CACHE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
     )
 endif()

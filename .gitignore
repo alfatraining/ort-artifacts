@@ -9,3 +9,5 @@ shrimp-rules.md
 /sampledata
 /run_*
 /openvino_tests
+**/__pycache__
+

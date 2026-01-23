@@ -9,7 +9,7 @@ index c8cf0b21a..237f8da70 100644
 +  install(
 +    FILES
 +      ${DML_PACKAGE_DIR}/bin/${onnxruntime_target_platform}-win/DirectML$<$<CONFIG:Debug>:.Debug>.dll
-+      ${DML_PACKAGE_DIR}/bin/${onnxruntime_target_platform}-win/DirectML$<$<CONFIG:Debug>:.Debug>.pdb
++      $<$<CONFIG:Debug>:${DML_PACKAGE_DIR}/bin/${onnxruntime_target_platform}-win/DirectML.Debug.pdb>
 +    DESTINATION
 +      ${CMAKE_INSTALL_BINDIR}/
 +  )
