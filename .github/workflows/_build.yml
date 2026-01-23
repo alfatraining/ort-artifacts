@@ -177,7 +177,11 @@ jobs:
           TARGET_LINUX: ${{ contains(matrix.target, 'linux') && 'true' || 'false' }}
         shell: bash
         run: |
-          ./scripts/build.sh -r "${{ inputs.onnxruntime-ref }}" -b "${{ inputs.buildtype }}" ${{ matrix.args }}
+          export CREATE_LOCAL_MANIFEST=OFF
+          export CREATE_ARCHIVE=ON
+          export ARCHIVE_NAME="./ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ steps.lower-buildtype.outputs.string }}.zip"
+          ./scripts/build-win.sh -r "${{ inputs.onnxruntime-ref }}" -b "${{ inputs.buildtype }}" ${{ matrix.args }} --build-dir ./build
+          python3 ./scripts/generate_manifest.py -r ./build/install -o ./manifest.json
 
       # - name: Fix OpenVINO linux rpath
       #   # NOTE: The version in the file path below must match the version for the `install-openvino-action` above
@@ -201,19 +205,19 @@ jobs:
           echo "string=${LOWER}" >> $GITHUB_OUTPUT
 
       # Create archive based on target OS
-      - name: Create artifact (.zip or .tar.gz)
-        if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
-        run: |
-          if [[ "${{ matrix.target }}" == *windows* ]]; then
-            pushd build/install
-            7z a -tzip $(dirs +1 -l)/ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ steps.lower-buildtype.outputs.string }}.zip
-            popd
-          else
-            pushd build/install
-            zip -y -r $(dirs +1 -l)/ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ steps.lower-buildtype.outputs.string }}.zip .
-            popd
-          fi
-        shell: bash
+      # - name: Create artifact (.zip or .tar.gz)
+      #   if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
+      #   run: |
+      #     if [[ "${{ matrix.target }}" == *windows* ]]; then
+      #       pushd build/install
+      #       7z a -tzip $(dirs +1 -l)/ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ steps.lower-buildtype.outputs.string }}.zip
+      #       popd
+      #     else
+      #       pushd build/install
+      #       zip -y -r $(dirs +1 -l)/ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ steps.lower-buildtype.outputs.string }}.zip .
+      #       popd
+      #     fi
+      #   shell: bash
 
       - name: Upload artifact
         if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
