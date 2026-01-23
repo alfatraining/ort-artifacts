@@ -146,12 +146,12 @@ jobs:
           add-to-path: false
           ndk-version: r28
 
-      - uses: JW-AV/install-openvino-action@v10.1
-        if: contains(matrix.args, '--openvino') && ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset))))
-        with:
-          version: "2025.2"
-          arch: ${{ contains(matrix.target, 'aarch64') && 'arm64' || 'x86_64' }}
-          release: ${{ (contains(matrix.target, 'linux') && (contains(matrix.target, 'aarch64') && 'ubuntu20' || 'ubuntu22') || 'ubuntu22') || '' }}
+      # - uses: JW-AV/install-openvino-action@v10.1
+      #   if: contains(matrix.args, '--openvino') && ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset))))
+      #   with:
+      #     version: "2025.2"
+      #     arch: ${{ contains(matrix.target, 'aarch64') && 'arm64' || 'x86_64' }}
+      #     release: ${{ (contains(matrix.target, 'linux') && (contains(matrix.target, 'aarch64') && 'ubuntu20' || 'ubuntu22') || 'ubuntu22') || '' }}
 
       - name: Ubuntu GCC 11 setup
         if: contains(matrix.runs-on, 'ubuntu-24')
@@ -166,6 +166,13 @@ jobs:
         run: |
           sudo apt install clang
 
+      - name: Lowercase buildtype
+        id: lower-buildtype
+        shell: bash
+        run: |
+          LOWER=$(echo "${{ inputs.buildtype }}" | tr '[:upper:]' '[:lower:]')
+          echo "string=${LOWER}" >> $GITHUB_OUTPUT
+
       - name: Run build
         if: >
           (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) ||
@@ -174,14 +181,13 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           CMAKE_SYSROOT: ${{ (matrix.target == 'linux-aarch64-dylib' || matrix.target == 'linux-aarch64-static') && '/opt/linaro-toolchain/aarch64-none-linux-gnu/libc' || '' }}
           CMAKE_FIND_ROOT_PATH: ${{ (matrix.target == 'linux-aarch64-dylib' || matrix.target == 'linux-aarch64-static') && '/opt/linaro-toolchain/aarch64-none-linux-gnu' || '' }}
-          TARGET_LINUX: ${{ contains(matrix.target, 'linux') && 'true' || 'false' }}
+          PLATFORM: ${{ (contains(matrix.target, 'linux') && 'linux') || (contains(matrix.target, 'macos') && 'macos') || (contains(matrix.target, 'windows') && 'win') || (contains(matrix.target, 'android') && 'android') || (contains(matrix.target, 'ios') && 'ios') || (contains(matrix.target, 'wasm') && 'wasm')}}
         shell: bash
         run: |
           export CREATE_LOCAL_MANIFEST=OFF
           export CREATE_ARCHIVE=ON
           export ARCHIVE_NAME="./ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ steps.lower-buildtype.outputs.string }}.zip"
-          ./scripts/build-win.sh -r "${{ inputs.onnxruntime-ref }}" -b "${{ inputs.buildtype }}" ${{ matrix.args }} --build-dir ./build
-          python3 ./scripts/generate_manifest.py -r ./build/install -o ./manifest.json
+          ./scripts/build.sh -r "${{ inputs.onnxruntime-ref }}" -b "${{ inputs.buildtype }}" ${{ matrix.args }} --build-dir ./build
 
       # - name: Fix OpenVINO linux rpath
       #   # NOTE: The version in the file path below must match the version for the `install-openvino-action` above
@@ -196,13 +202,6 @@ jobs:
       #     sudo apt-get update
       #     sudo apt-get install -y patchelf
       #     patchelf --set-rpath '$ORIGIN' build/artifact/onnxruntime/lib/libopenvino.so.2025.2.0
-
-      - name: Lowercase buildtype
-        id: lower-buildtype
-        shell: bash
-        run: |
-          LOWER=$(echo "${{ inputs.buildtype }}" | tr '[:upper:]' '[:lower:]')
-          echo "string=${LOWER}" >> $GITHUB_OUTPUT
 
       # Create archive based on target OS
       # - name: Create artifact (.zip or .tar.gz)

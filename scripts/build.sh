@@ -5,10 +5,11 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-PLATFORM="${1:?Usage: $0 <platform> [options...]}"
-shift
+# PLATFORM="${1:?Usage: $0 <platform> [options...]}"
+# shift
 
-ARGS=(--platform "$PLATFORM")
+# ARGS=(--platform "$PLATFORM")
+[[ -n "${PLATFORM:-}" ]] && ARGS+=(--platform "${PLATFORM}")
 
 # Architecture (universal default: x86_64)
 ARGS+=(--arch "${BUILD_ARCH:-x86_64}")
