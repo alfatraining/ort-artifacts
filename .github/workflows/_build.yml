@@ -177,30 +177,21 @@ jobs:
           TARGET_LINUX: ${{ contains(matrix.target, 'linux') && 'true' || 'false' }}
         shell: bash
         run: |
-          ./build.sh -r "${{ inputs.onnxruntime-ref }}" -b "${{ inputs.buildtype }}" ${{ matrix.args }}
+          ./scripts/build.sh -r "${{ inputs.onnxruntime-ref }}" -b "${{ inputs.buildtype }}" ${{ matrix.args }}
 
-      # See: https://github.com/microsoft/onnxruntime/issues/24911
-      # - name: Remove executable stack flag
-      #   if: ((inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))) && (matrix.target == 'linux-x86_64-dylib' || matrix.target == 'linux-aarch64-dylib' || matrix.target == 'android-aarch64-dylib')
+      # - name: Fix OpenVINO linux rpath
+      #   # NOTE: The version in the file path below must match the version for the `install-openvino-action` above
+      #   if: >
+      #     contains(matrix.args, '--openvino') && contains(matrix.target, 'linux') &&
+      #     (
+      #       (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) ||
+      #       (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
+      #     )
+      #   shell: bash
       #   run: |
       #     sudo apt-get update
       #     sudo apt-get install -y patchelf
-      #     # patchelf --clear-execstack build/artifact/onnxruntime/lib/libonnxruntime_sx${{ (inputs.buildtype == 'Debug') && 'd' || '' }}.so
-      #     execstack -c build/artifact/onnxruntime/lib/libonnxruntime_sx${{ (inputs.buildtype == 'Debug') && 'd' || '' }}.so
-
-      - name: Fix OpenVINO linux rpath
-        # NOTE: The version in the file path below must match the version for the `install-openvino-action` above
-        if: >
-          contains(matrix.args, '--openvino') && contains(matrix.target, 'linux') &&
-          (
-            (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) ||
-            (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
-          )
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y patchelf
-          patchelf --set-rpath '$ORIGIN' build/artifact/onnxruntime/lib/libopenvino.so.2025.2.0
+      #     patchelf --set-rpath '$ORIGIN' build/artifact/onnxruntime/lib/libopenvino.so.2025.2.0
 
       - name: Lowercase buildtype
         id: lower-buildtype
@@ -214,11 +205,11 @@ jobs:
         if: (inputs.target-custom != '' && (inputs.target-custom == 'all' || contains(matrix.target, inputs.target-custom))) || (inputs.target-custom == '' && (inputs.target-preset == 'all' || contains(matrix.target, inputs.target-preset)))
         run: |
           if [[ "${{ matrix.target }}" == *windows* ]]; then
-            pushd build/artifact
+            pushd build/install
             7z a -tzip $(dirs +1 -l)/ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ steps.lower-buildtype.outputs.string }}.zip
             popd
           else
-            pushd build/artifact
+            pushd build/install
             zip -y -r $(dirs +1 -l)/ort-${{ inputs.onnxruntime-ref }}-${{ matrix.target }}-${{ steps.lower-buildtype.outputs.string }}.zip .
             popd
           fi
