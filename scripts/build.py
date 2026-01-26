@@ -841,12 +841,12 @@ def archive_artifacts(
     """
     # Determine archive path
     archive_dir = Path(archive_name).parent
-    archive_base = Path(archive_name).name.lower()
+    archive_base = Path(archive_name).stem.lower()
 
-    if archive_dir == Path("."):
-        archive_file_path = Path(".") / f"{archive_base}.zip"
-    else:
-        archive_file_path = archive_dir / f"{archive_base}.zip"
+    # if archive_dir == Path("."):
+    #     archive_file_path = Path(".") / f"{archive_base}.zip"
+    # else:
+    archive_file_path = archive_dir / f"{archive_base}.zip"
 
     if dry_run:
         print(
